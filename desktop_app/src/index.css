@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════
+   NeuroMate Desktop App — Design System
+   Mirrors website tokens: purple-to-cyan palette, glassmorphism, Poppins + Open Sans
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Core Palette ─────────────────────────────────────────────── */
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(232 45% 16%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(232 45% 16%);
+
+  --color-primary: hsl(258 100% 83%);
+  --color-primary-foreground: hsl(232 45% 16%);
+  --color-primary-blue: hsl(197 100% 84%);
+
+  --color-secondary: hsl(0 0% 98%);
+  --color-secondary-foreground: hsl(232 45% 16%);
+
+  --color-muted: hsl(258 30% 95%);
+  --color-muted-foreground: hsl(232 20% 50%);
+
+  --color-accent: hsl(181 84% 66%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-accent-aqua: hsl(181 84% 66%);
+
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(258 20% 90%);
+  --color-input: hsl(258 20% 90%);
+  --color-ring: hsl(258 100% 83%);
+
+  /* ── Desktop-specific layout tokens ───────────────────────────── */
+  --titlebar-height: 40px;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 64px;
+
+  /* ── Typography ────────────────────────────────────────────────── */
+  --font-sans: 'Open Sans', sans-serif;
+  --font-heading: 'Poppins', sans-serif;
+
+  /* ── Border radius ─────────────────────────────────────────────── */
+  --radius: 1rem;
+  --radius-lg: 1rem;
+  --radius-md: calc(1rem - 2px);
+  --radius-sm: calc(1rem - 4px);
+
+  /* ── Gradients ──────────────────────────────────────────────────── */
+  --gradient-primary: linear-gradient(135deg, hsl(258 100% 83%), hsl(197 100% 84%));
+  --gradient-hero: linear-gradient(180deg, hsl(258 100% 83% / 0.1), hsl(197 100% 84% / 0.1));
+  --gradient-sidebar: linear-gradient(180deg, hsl(258 100% 98%), hsl(197 100% 97%));
+
+  /* ── Shadows ────────────────────────────────────────────────────── */
+  --shadow-glow: 0 0 40px hsl(258 100% 83% / 0.3);
+  --shadow-card: 0 10px 40px hsl(258 30% 70% / 0.15);
+  --shadow-sidebar: 2px 0 20px hsl(258 30% 70% / 0.1);
+
+  /* ── Transitions ────────────────────────────────────────────────── */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Base reset ─────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    overflow: hidden; /* Desktop app — no browser scroll */
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none; /* Prevent text selection like native app */
+  }
+
+  /* Allow text selection in content areas */
+  .selectable {
+    user-select: text;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  /* Custom scrollbar — subtle and on-brand */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(258 100% 83% / 0.4);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(258 100% 83% / 0.7);
+  }
+}
+
+/* ── Utility classes ────────────────────────────────────────────────── */
+@layer utilities {
+  /* Glassmorphism cards */
+  .glass-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: hsl(0 0% 100% / 0.8);
+    border: 1px solid hsl(0 0% 100% / 0.2);
+    box-shadow: var(--shadow-card);
+  }
+
+  .glass-card-dark {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: hsl(232 45% 16% / 0.05);
+    border: 1px solid hsl(258 100% 83% / 0.15);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Gradient background */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  /* Hover glow effect */
+  .hover-glow {
+    transition: var(--transition-smooth);
+  }
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+
+  /* Tauri draggable region for custom title bar */
+  .titlebar-drag {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+  .titlebar-no-drag {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+
+  /* Page entrance animation */
+  .page-enter {
+    animation: pageEnter 0.25s ease-out forwards;
+  }
+
+  /* Skeleton loading pulse */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(258 30% 95%) 25%,
+      hsl(258 30% 90%) 50%,
+      hsl(258 30% 95%) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+  }
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(258 100% 83% / 0.3); }
+  50%       { box-shadow: 0 0 40px hsl(258 100% 83% / 0.6); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

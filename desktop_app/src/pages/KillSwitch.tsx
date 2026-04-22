@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { PowerOff, AlertTriangle, Wifi, Mic, Brain, CheckCircle, XCircle } from "lucide-react";
-import { triggerKillSwitch } from "@/hooks/useTauri";
+import { triggerKillSwitch } from "@/services/tauri";
 import { useAppStore } from "@/store/useAppStore";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 // ── System status row ─────────────────────────────────────────────────────
 

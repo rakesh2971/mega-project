@@ -8,7 +8,6 @@ import Productivity from "@/pages/Productivity";
 import Dashboard from "@/pages/Dashboard";
 import Settings from "@/pages/Settings";
 import KillSwitch from "@/pages/KillSwitch";
-import AvatarFloat from "@/pages/AvatarFloat";
 
 // ── App ───────────────────────────────────────────────────────────────────
 
@@ -25,8 +24,7 @@ export default function App() {
           <Route path="/settings"    element={<Settings />} />
           <Route path="/kill-switch" element={<KillSwitch />} />
 
-          {/* ── Floating avatar overlay (second Tauri window) ── */}
-          <Route path="/avatar-float" element={<AvatarFloat />} />
+
         </Routes>
       </AppLayout>
     </MemoryRouter>

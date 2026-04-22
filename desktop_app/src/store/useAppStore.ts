@@ -1,55 +1,10 @@
 import { create } from "zustand";
+import type { AppState } from "@/types/app";
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
-export type AvatarMood = "neutral" | "happy" | "focused" | "concerned" | "excited";
-export type UserStatus = "online" | "focusing" | "do not disturb";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-  status: UserStatus;
-}
-
-export interface AppState {
-  // ── User ─────────────────────────────────────────────────────────
-  user: User | null;
-  setUser: (user: User | null) => void;
-
-  // ── Avatar ───────────────────────────────────────────────────────
-  avatarMood: AvatarMood;
-  setAvatarMood: (mood: AvatarMood) => void;
-  isAvatarFloating: boolean;
-  setAvatarFloating: (floating: boolean) => void;
-
-  // ── Connection ───────────────────────────────────────────────────
-  isConnected: boolean;
-  setConnected: (connected: boolean) => void;
-  wsStatus: "connecting" | "connected" | "disconnected" | "error";
-  setWsStatus: (status: AppState["wsStatus"]) => void;
-
-  // ── Kill Switch ──────────────────────────────────────────────────
-  killSwitchActive: boolean;
-  setKillSwitchActive: (active: boolean) => void;
-
-  // ── Navigation ───────────────────────────────────────────────────
-  currentPage: string;
-  setCurrentPage: (page: string) => void;
-  isSidebarCollapsed: boolean;
-  toggleSidebar: () => void;
-
-  // ── Theme (future use) ───────────────────────────────────────────
-  theme: "light" | "dark";
-  setTheme: (theme: "light" | "dark") => void;
-
-  // ── Voice ────────────────────────────────────────────────────────
-  isListening: boolean;
-  setListening: (listening: boolean) => void;
-  isSpeaking: boolean;
-  setSpeaking: (speaking: boolean) => void;
-}
+// Re-export types for backward compatibility (consumers can still import from here)
+export type { AvatarMood } from "@/types/avatar";
+export type { UserStatus, User } from "@/types/user";
+export type { AppState } from "@/types/app";
 
 // ── Store ─────────────────────────────────────────────────────────────────
 

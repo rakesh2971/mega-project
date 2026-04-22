@@ -2,7 +2,7 @@ import {
   Timer, Focus, CheckSquare, BookOpen, RefreshCw,
   Wind, Music, Brain, ChevronRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 // ── Tool card definition ──────────────────────────────────────────────────
 

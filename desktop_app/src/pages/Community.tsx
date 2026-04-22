@@ -1,5 +1,5 @@
 import { Users, MessageCircle, Trophy, TrendingUp, Bookmark, Settings2, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 // ── Tab definition ────────────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@ import {
   Mic,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 // ── Nav items definition ──────────────────────────────────────────────────
 

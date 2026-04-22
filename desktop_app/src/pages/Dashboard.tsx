@@ -1,5 +1,5 @@
 import { BarChart3, Heart, Focus, TrendingUp, Activity, Calendar, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 // ── Metric card ───────────────────────────────────────────────────────────
 

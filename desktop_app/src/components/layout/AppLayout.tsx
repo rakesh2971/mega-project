@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import TitleBar from "./TitleBar";
 import Sidebar from "./Sidebar";
 import { useAppStore } from "@/store/useAppStore";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,11 +20,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
     setCurrentPage(location.pathname);
   }, [location.pathname, setCurrentPage]);
 
-  // Don't render full layout for the floating avatar window
-  const isFloatWindow = location.pathname === "/avatar-float";
-  if (isFloatWindow) {
-    return <>{children}</>;
-  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[hsl(0_0%_100%)] rounded-lg">

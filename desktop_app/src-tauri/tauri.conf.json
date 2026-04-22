@@ -26,16 +26,15 @@
       },
       {
         "label": "avatar-float",
-        "title": "NeuroMate Avatar",
-        "width": 300,
-        "height": 400,
+        "title": "NeuroMate",
+        "width": 260,
+        "height": 380,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": false,
-        "visible": false,
-        "url": "index.html#/avatar-float"
+        "visible": false
       }
     ],
     "security": {

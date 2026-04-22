@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Settings as SettingsIcon, User, Palette, Bell, Shield, Brain, Info, ChevronRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 
 // ── Tab definition ────────────────────────────────────────────────────────

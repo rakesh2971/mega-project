@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
-import { Heart, Focus, BookOpen, TrendingUp, Activity, Mic, MicOff, MessageSquare } from "lucide-react";
-import AvatarCanvas from "@/components/avatar/AvatarCanvas";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { Heart, Focus, BookOpen, TrendingUp, Activity, Mic, MicOff, MessageSquare, Loader2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { getGreeting, formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { getGreeting, formatDate } from "@/lib/formatters";
+import { cn } from "@/lib/cn";
+import { FLOAT_CANVAS_H } from "@/constants/avatar";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
+// Lazy-load the heavy Live2D + PIXI bundle so React mounts instantly
+const AvatarCanvas = lazy(() => import("@/components/avatar/AvatarCanvas"));
 
 // ── Quick stat card ───────────────────────────────────────────────────────
 
@@ -52,7 +56,7 @@ export default function Home() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left: Avatar + Chat ──────────────────────────────── */}
-      <div className="flex flex-col items-center justify-center w-72 shrink-0 border-r border-[hsl(258_20%_90%)] p-6 gap-6 bg-gradient-hero">
+      <div className="flex flex-col items-center justify-center w-80 shrink-0 border-r border-[hsl(258_20%_90%)] p-6 gap-6 bg-gradient-hero">
         {/* Greeting */}
         <div className="text-center">
           <p className="text-xs text-[hsl(232_20%_50%)] font-medium">
@@ -60,12 +64,23 @@ export default function Home() {
           </p>
           <h1 className="text-xl font-heading font-bold text-[hsl(232_45%_16%)] mt-1">
             {getGreeting()},{" "}
-            <span className="gradient-text">User</span> 👋
+            <span className="gradient-text">User</span> 
           </h1>
         </div>
 
-        {/* Avatar */}
-        <AvatarCanvas mode="home" mood={avatarMood} />
+        {/* Avatar — lazy-loaded Live2D canvas, isolated error boundary */}
+        <ErrorBoundary label="Avatar Error">
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center w-full gap-3" style={{ height: FLOAT_CANVAS_H }}>
+                <Loader2 className="h-8 w-8 animate-spin text-[hsl(258_100%_65%)]" />
+                <span className="text-xs text-[hsl(232_20%_50%)]">Loading avatar…</span>
+              </div>
+            }
+          >
+            <AvatarCanvas mode="home" mood={avatarMood} />
+          </Suspense>
+        </ErrorBoundary>
 
         {/* Voice toggle */}
         <button

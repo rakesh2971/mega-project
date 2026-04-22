@@ -3,15 +3,17 @@ use tauri::{AppHandle, Manager};
 
 // ── Window management commands ──────────────────────────────────────────────
 
-/// Show the floating avatar window and hide the main window
+/// Hide the main window completely and show the floating avatar widget.
+/// The main window disappears from the taskbar — only the always-on-top
+/// avatar overlay is visible so the user can chat while working.
 #[tauri::command]
 fn show_avatar_float(app: AppHandle) {
-    if let Some(main_win) = app.get_webview_window("main") {
-        let _ = main_win.hide();
-    }
     if let Some(float_win) = app.get_webview_window("avatar-float") {
         let _ = float_win.show();
         let _ = float_win.set_focus();
+    }
+    if let Some(main_win) = app.get_webview_window("main") {
+        let _ = main_win.hide(); // fully hidden, not on taskbar
     }
 }
 

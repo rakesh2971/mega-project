@@ -94,18 +94,22 @@
 
   /* Custom scrollbar — subtle and on-brand */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(258 100% 83% / 0.4);
+    background: hsl(258 100% 83% / 0.35);
     border-radius: 999px;
+    transition: background 0.2s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(258 100% 83% / 0.7);
+    background: hsl(258 100% 65% / 0.6);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
@@ -113,11 +117,13 @@
 @layer utilities {
   /* Glassmorphism cards */
   .glass-card {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background: hsl(0 0% 100% / 0.8);
-    border: 1px solid hsl(0 0% 100% / 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: hsl(0 0% 100% / 0.82);
+    border: 1px solid hsl(0 0% 100% / 0.25);
     box-shadow: var(--shadow-card);
+    /* Isolate stacking context so backdrop-filter doesn't repaint siblings */
+    isolation: isolate;
   }
 
   .glass-card-dark {
@@ -180,6 +186,27 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: var(--radius-md);
+  }
+
+  /* Smooth scrolling for content areas */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;  /* momentum/inertia scrolling in WebKit */
+    overscroll-behavior: contain;       /* prevent scroll chaining to parent */
+    /* Force a GPU compositing layer so scroll doesn't trigger main-thread paint */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Hide scrollbar visually but keep scrollability */
+  .scrollbar-hide {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;               /* Chrome/Safari/Tauri WebView */
   }
 }
 

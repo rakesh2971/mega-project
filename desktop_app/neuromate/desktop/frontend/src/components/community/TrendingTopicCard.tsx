@@ -24,7 +24,7 @@ export default function TrendingTopicCard({ topic }: { topic: TrendingTopic }) {
 
       <div className="p-4 flex-1 space-y-2">
         {/* Tag badge */}
-        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(258_100%_65%_/_0.1)] text-[hsl(258_100%_55%)] border border-[hsl(258_100%_65%_/_0.2)]">
+        <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(258_100%_65%/0.1)] text-[hsl(258_100%_55%)] border border-[hsl(258_100%_65%/0.2)]">
           {topic.tag}
         </span>
 
@@ -34,7 +34,7 @@ export default function TrendingTopicCard({ topic }: { topic: TrendingTopic }) {
         </h3>
 
         {/* Description */}
-        <p className="text-xs text-[hsl(232_20%_50%)] leading-relaxed line-clamp-2">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
           {topic.description}
         </p>
 
@@ -53,7 +53,7 @@ export default function TrendingTopicCard({ topic }: { topic: TrendingTopic }) {
 
       {/* CTA */}
       <div className="px-4 pb-4 pt-1 border-t border-[hsl(258_20%_92%)] mt-auto">
-        <button className="w-full py-1.5 rounded-xl text-xs font-heading font-semibold text-[hsl(232_20%_50%)] flex items-center justify-center gap-1.5 hover:bg-gradient-primary hover:text-[hsl(232_45%_16%)] transition-all group-hover:bg-gradient-primary group-hover:text-[hsl(232_45%_16%)]">
+        <button className="w-full py-1.5 rounded-xl text-xs font-heading font-semibold text-muted-foreground flex items-center justify-center gap-1.5 hover:bg-gradient-primary hover:text-[hsl(232_45%_16%)] transition-all group-hover:bg-gradient-primary group-hover:text-[hsl(232_45%_16%)]">
           Join Discussion <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>

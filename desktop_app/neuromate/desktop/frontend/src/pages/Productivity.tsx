@@ -99,7 +99,7 @@ export default function Productivity() {
         <h1 className="text-xl font-heading font-bold text-[hsl(232_45%_16%)]">
           Productivity Tools
         </h1>
-        <p className="text-sm text-[hsl(232_20%_50%)] mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Eight AI-powered tools to unlock your peak performance
         </p>
       </div>
@@ -117,7 +117,7 @@ export default function Productivity() {
             )}
           >
             {/* Icon */}
-            <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br", gradient)}>
+            <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center bg-linear-to-br", gradient)}>
               <Icon className="text-[hsl(232_45%_25%)]" size={20} />
             </div>
 

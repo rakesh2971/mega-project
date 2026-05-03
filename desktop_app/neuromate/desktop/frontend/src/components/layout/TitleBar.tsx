@@ -33,7 +33,7 @@ export default function TitleBar() {
       className={cn(
         "flex items-center justify-between",
         "glass-card border-b border-[hsl(258_20%_90%)]",
-        "h-[var(--titlebar-height)] shrink-0 select-none z-50"
+        "h-(--titlebar-height) shrink-0 select-none z-50"
       )}
     >
       {/* ── Left: Logo (no-drag) ────────────────────────────────── */}
@@ -41,7 +41,7 @@ export default function TitleBar() {
         className="titlebar-no-drag flex items-center gap-2 px-4 h-full"
         style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[hsl(258_100%_83%_/_0.1)] transition-colors cursor-default">
+        <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[hsl(258_100%_83%/0.1)] transition-colors cursor-default">
           <Brain className="h-5 w-5 text-[hsl(258_100%_83%)]" />
           <span
             className="text-sm font-bold gradient-text"
@@ -64,13 +64,13 @@ export default function TitleBar() {
             className={cn(
               "h-2 w-2 rounded-full transition-colors",
               wsStatus === "connected"
-                ? "bg-green-400 shadow-[0_0_6px_hsl(142_76%_56%_/_0.6)]"
+                ? "bg-green-400 shadow-[0_0_6px_hsl(142_76%_56%/0.6)]"
                 : wsStatus === "connecting"
                 ? "bg-yellow-400 animate-pulse"
                 : "bg-gray-300"
             )}
           />
-          <span className="text-xs text-[hsl(232_20%_50%)] font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             {wsStatus === "connected"
               ? "Connected"
               : wsStatus === "connecting"
@@ -80,7 +80,7 @@ export default function TitleBar() {
         </div>
 
         {isListening && (
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(258_100%_83%_/_0.15)] border border-[hsl(258_100%_83%_/_0.3)] pointer-events-none">
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(258_100%_83%/0.15)] border border-[hsl(258_100%_83%/0.3)] pointer-events-none">
             <div className="h-1.5 w-1.5 rounded-full bg-[hsl(258_100%_83%)] animate-pulse" />
             <span className="text-xs text-[hsl(258_100%_65%)] font-medium">Listening</span>
           </div>
@@ -101,8 +101,8 @@ export default function TitleBar() {
           className={cn(
             "flex items-center justify-center w-11 h-full",
             "text-[hsl(232_20%_60%)]",
-            "hover:text-[hsl(258_100%_65%)] hover:bg-[hsl(258_100%_83%_/_0.12)]",
-            "active:scale-90 active:bg-[hsl(258_100%_83%_/_0.2)]",
+            "hover:text-[hsl(258_100%_65%)] hover:bg-[hsl(258_100%_83%/0.12)]",
+            "active:scale-90 active:bg-[hsl(258_100%_83%/0.2)]",
             "transition-all duration-150 cursor-default"
           )}
         >

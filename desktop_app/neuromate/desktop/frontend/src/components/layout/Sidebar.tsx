@@ -42,10 +42,10 @@ export default function Sidebar() {
       className={cn(
         "flex flex-col shrink-0 h-full",
         "border-r border-[hsl(258_20%_90%)]",
-        "bg-[var(--gradient-sidebar)]",
-        "shadow-[var(--shadow-sidebar)]",
+        "bg-(--gradient-sidebar)",
+        "shadow-(--shadow-sidebar)",
         "transition-all duration-300 ease-in-out",
-        isSidebarCollapsed ? "w-16" : "w-[var(--sidebar-width)]"
+        isSidebarCollapsed ? "w-16" : "w-(--sidebar-width)"
       )}
       style={{ background: "var(--gradient-sidebar)" }}
     >
@@ -53,13 +53,13 @@ export default function Sidebar() {
       <div
         className={cn(
           "flex items-center gap-3 px-3 py-3 mx-2 mt-2 rounded-xl",
-          "bg-white/60 border border-[hsl(258_100%_83%_/_0.2)]",
+          "bg-white/60 border border-[hsl(258_100%_83%/0.2)]",
           "transition-all duration-300"
         )}
       >
         {/* Avatar circle placeholder */}
         <div className="relative shrink-0">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[hsl(258_100%_83%)] to-[hsl(197_100%_84%)] flex items-center justify-center shadow-[var(--shadow-glow)]">
+          <div className="h-8 w-8 rounded-full bg-linear-to-br from-[hsl(258_100%_83%)] to-primary-blue flex items-center justify-center shadow-(--shadow-glow)">
             <Brain className="h-4 w-4 text-white" />
           </div>
           {/* Status dot */}
@@ -77,7 +77,7 @@ export default function Sidebar() {
             <p className="text-xs font-heading font-semibold text-[hsl(232_45%_16%)] truncate">
               NeuroMate AI
             </p>
-            <p className="text-[10px] text-[hsl(232_20%_50%)] flex items-center gap-1">
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
               {isListening ? (
                 <>
                   <Mic className="h-2.5 w-2.5 text-[hsl(258_100%_65%)] animate-pulse" />
@@ -107,8 +107,8 @@ export default function Sidebar() {
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl",
                 "text-left transition-all duration-200 group",
                 active
-                  ? "bg-gradient-primary text-[hsl(232_45%_16%)] shadow-[var(--shadow-card)]"
-                  : "text-[hsl(232_20%_50%)] hover:bg-white/60 hover:text-[hsl(232_45%_16%)]"
+                  ? "bg-gradient-primary text-[hsl(232_45%_16%)] shadow-(--shadow-card)"
+                  : "text-muted-foreground hover:bg-white/60 hover:text-[hsl(232_45%_16%)]"
               )}
             >
               <Icon
@@ -123,7 +123,7 @@ export default function Sidebar() {
               )}
               {/* Active pill indicator */}
               {active && !isSidebarCollapsed && (
-                <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(232_45%_16%_/_0.5)]" />
+                <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[hsl(232_45%_16%/0.5)]" />
               )}
             </button>
           );
@@ -166,7 +166,7 @@ export default function Sidebar() {
           title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
             "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl",
-            "text-[hsl(232_20%_50%)] hover:bg-white/60 hover:text-[hsl(232_45%_16%)]",
+            "text-muted-foreground hover:bg-white/60 hover:text-[hsl(232_45%_16%)]",
             "transition-all duration-200 text-xs font-medium"
           )}
         >

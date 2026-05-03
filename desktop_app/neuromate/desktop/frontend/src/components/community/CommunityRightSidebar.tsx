@@ -39,7 +39,7 @@ export default function CommunityRightSidebar() {
         <div className="space-y-2">
           {TOP_USERS.map((user) => (
             <div key={user.rank} className="flex items-center gap-2">
-              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] shrink-0 ${RANK_STYLES[user.rank] ?? "bg-[hsl(258_30%_93%)] text-[hsl(232_20%_50%)] font-medium"}`}>
+              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] shrink-0 ${RANK_STYLES[user.rank] ?? "bg-[hsl(258_30%_93%)] text-muted-foreground font-medium"}`}>
                 {user.rank}
               </div>
               <img
@@ -54,7 +54,7 @@ export default function CommunityRightSidebar() {
           ))}
         </div>
 
-        <button className="w-full py-1.5 rounded-xl text-[10px] font-semibold text-[hsl(258_100%_60%)] border border-[hsl(258_100%_65%_/_0.25)] hover:bg-[hsl(258_100%_65%_/_0.07)] transition-all">
+        <button className="w-full py-1.5 rounded-xl text-[10px] font-semibold text-[hsl(258_100%_60%)] border border-[hsl(258_100%_65%/0.25)] hover:bg-[hsl(258_100%_65%/0.07)] transition-all">
           Full Leaderboard
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function CommunityRightSidebar() {
           <div key={label} className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Icon size={11} className="text-[hsl(258_100%_65%)]" />
-              <span className="text-[11px] text-[hsl(232_20%_50%)]">{label}</span>
+              <span className="text-[11px] text-muted-foreground">{label}</span>
             </div>
             <span className="text-xs font-bold text-[hsl(232_45%_16%)]">{value}</span>
           </div>
@@ -81,7 +81,7 @@ export default function CommunityRightSidebar() {
           return (
             <div key={i} className="rounded-xl border border-[hsl(258_20%_90%)] p-2.5 space-y-2">
               <div className="flex items-start gap-2">
-                <div className="p-1.5 rounded-lg bg-[hsl(258_100%_65%_/_0.1)] shrink-0">
+                <div className="p-1.5 rounded-lg bg-[hsl(258_100%_65%/0.1)] shrink-0">
                   <Icon size={12} className="text-[hsl(258_100%_60%)]" />
                 </div>
                 <div>

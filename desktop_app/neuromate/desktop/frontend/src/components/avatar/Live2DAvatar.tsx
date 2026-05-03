@@ -64,7 +64,7 @@ export default function Live2DAvatar({ mode = "home", mood = "neutral" }: Live2D
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
           <div className="glass-card rounded-2xl px-6 py-4 flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-[hsl(258_100%_65%)]" />
-            <p className="text-xs font-heading font-medium text-[hsl(232_20%_50%)]">Loading avatar…</p>
+            <p className="text-xs font-heading font-medium text-muted-foreground">Loading avatar…</p>
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="w-1.5 h-1.5 rounded-full bg-[hsl(258_100%_65%)] animate-bounce"
@@ -81,7 +81,7 @@ export default function Live2DAvatar({ mode = "home", mood = "neutral" }: Live2D
           <div className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 max-w-[260px] text-center">
             <AlertCircle className="h-8 w-8 text-red-400" />
             <p className="text-xs font-heading font-semibold text-[hsl(232_45%_16%)]">Avatar failed to load</p>
-            <p className="text-[10px] text-[hsl(232_20%_50%)] break-words">{error}</p>
+            <p className="text-[10px] text-muted-foreground wrap-break-word">{error}</p>
           </div>
         </div>
       )}
@@ -90,7 +90,7 @@ export default function Live2DAvatar({ mode = "home", mood = "neutral" }: Live2D
       {isReady && !isFloat && (
         <div className="mt-2 flex items-center gap-1.5 z-10">
           <Sparkles className="h-3 w-3 text-[hsl(258_100%_65%)]" />
-          <span className="text-xs font-heading font-medium text-[hsl(232_20%_50%)] capitalize">
+          <span className="text-xs font-heading font-medium text-muted-foreground capitalize">
             {mood} mood
           </span>
         </div>

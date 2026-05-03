@@ -41,7 +41,24 @@ CREATE TABLE IF NOT EXISTS community_posts (
     comments   INT DEFAULT 0,
     is_helpful BOOLEAN DEFAULT FALSE,
     productivity_score INT,
+    original_post_id UUID REFERENCES community_posts(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id    UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+    author_id  UUID REFERENCES app_users(id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS saved_posts (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID REFERENCES app_users(id) ON DELETE CASCADE,
+    post_id    UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, post_id)
 );
 
 CREATE TABLE IF NOT EXISTS trending_topics (

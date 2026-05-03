@@ -1,4 +1,5 @@
-pub mod window;
+pub mod ai;
 pub mod auth;
 pub mod community;
-pub mod ai;
+pub mod window;
+pub mod chat;

@@ -34,8 +34,8 @@ export default function QuestionCard({ question }: { question: Question }) {
           className={cn(
             "p-1 rounded-lg transition-all",
             upvoted
-              ? "text-[hsl(258_100%_60%)] bg-[hsl(258_100%_65%_/_0.1)]"
-              : "text-[hsl(232_20%_60%)] hover:text-[hsl(258_100%_60%)] hover:bg-[hsl(258_100%_65%_/_0.07)]"
+              ? "text-[hsl(258_100%_60%)] bg-[hsl(258_100%_65%/0.1)]"
+              : "text-[hsl(232_20%_60%)] hover:text-[hsl(258_100%_60%)] hover:bg-[hsl(258_100%_65%/0.07)]"
           )}
         >
           <ArrowBigUp size={20} className={cn(upvoted && "fill-[hsl(258_100%_60%)]")} />
@@ -54,7 +54,7 @@ export default function QuestionCard({ question }: { question: Question }) {
               {question.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(258_30%_95%)] text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)]"
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)]"
                 >
                   {tag}
                 </span>
@@ -68,7 +68,7 @@ export default function QuestionCard({ question }: { question: Question }) {
           )}
         </div>
 
-        <p className="text-xs text-[hsl(232_20%_50%)] leading-relaxed line-clamp-2">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
           {question.description}
         </p>
 
@@ -96,8 +96,8 @@ export default function QuestionCard({ question }: { question: Question }) {
               className={cn(
                 "p-1 rounded-lg transition-all",
                 bookmarked
-                  ? "text-[hsl(258_100%_60%)] bg-[hsl(258_100%_65%_/_0.1)]"
-                  : "text-[hsl(232_20%_60%)] hover:bg-[hsl(258_30%_95%)]"
+                  ? "text-[hsl(258_100%_60%)] bg-[hsl(258_100%_65%/0.1)]"
+                  : "text-[hsl(232_20%_60%)] hover:bg-muted"
               )}
             >
               <Bookmark size={12} className={cn(bookmarked && "fill-[hsl(258_100%_60%)]")} />

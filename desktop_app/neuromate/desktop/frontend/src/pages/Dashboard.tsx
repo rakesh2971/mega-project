@@ -152,7 +152,7 @@ function ChartCard({
                   "text-[10px] font-heading font-semibold px-2 py-1 rounded-lg transition-all",
                   activeRange === r
                     ? "bg-gradient-primary text-[hsl(232_45%_16%)]"
-                    : "text-[hsl(232_20%_55%)] hover:bg-[hsl(258_30%_95%)]"
+                    : "text-[hsl(232_20%_55%)] hover:bg-muted"
                 )}
               >
                 {r}
@@ -265,14 +265,14 @@ function ContributionHeatmap() {
       {/* Grid */}
       <div className="flex gap-[3px] overflow-x-auto pb-1">
         {/* Day labels */}
-        <div className="flex flex-col gap-[3px] text-[9px] text-[hsl(232_20%_55%)] pr-1 pt-0.5 flex-shrink-0">
+        <div className="flex flex-col gap-[3px] text-[9px] text-[hsl(232_20%_55%)] pr-1 pt-0.5 shrink-0">
           {WEEK_DAYS.map((d, i) => (
             <div key={d} className="h-[10px] flex items-center">{i % 2 === 0 ? d : ""}</div>
           ))}
         </div>
 
         {Array.from({ length: weeks }).map((_, wi) => (
-          <div key={wi} className="flex flex-col gap-[3px] flex-shrink-0">
+          <div key={wi} className="flex flex-col gap-[3px] shrink-0">
             {Array.from({ length: 7 }).map((_, di) => {
               const d = days[wi * 7 + di];
               if (!d) return <div key={di} className="w-[10px] h-[10px]" />;
@@ -344,9 +344,9 @@ export default function Dashboard() {
       <div className="px-5 py-4 border-b border-[hsl(258_20%_90%)] bg-gradient-hero flex items-center justify-between">
         <div>
           <h1 className="text-lg font-heading font-bold text-[hsl(232_45%_16%)]">Dashboard</h1>
-          <p className="text-xs text-[hsl(232_20%_50%)] mt-0.5">Your wellness journey, visualized</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Your wellness journey, visualized</p>
         </div>
-        <span className="text-[10px] font-medium text-[hsl(232_20%_55%)] bg-[hsl(258_30%_95%)] px-2 py-1 rounded-full">
+        <span className="text-[10px] font-medium text-[hsl(232_20%_55%)] bg-muted px-2 py-1 rounded-full">
           Last updated: Just now
         </span>
       </div>
@@ -525,12 +525,12 @@ export default function Dashboard() {
             <div className="space-y-2.5">
               {recentActivities.map((a, i) => (
                 <div key={i} className="flex items-center gap-3 py-2 border-b border-[hsl(258_20%_93%)] last:border-0">
-                  <div className={cn("w-2 h-2 rounded-full flex-shrink-0", a.dot)} />
+                  <div className={cn("w-2 h-2 rounded-full shrink-0", a.dot)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[hsl(232_45%_16%)] truncate">{a.title}</p>
                     <p className="text-[10px] text-[hsl(232_20%_55%)]">{a.time}</p>
                   </div>
-                  <span className="text-[10px] font-medium capitalize text-[hsl(232_20%_60%)] bg-[hsl(258_30%_95%)] px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium capitalize text-[hsl(232_20%_60%)] bg-muted px-2 py-0.5 rounded-full">
                     {a.type}
                   </span>
                 </div>

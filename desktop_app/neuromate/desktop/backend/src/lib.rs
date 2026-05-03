@@ -43,13 +43,28 @@ pub fn run() {
             // auth
             commands::auth::get_current_user,
             commands::auth::login_user,
+            commands::auth::get_user_by_id,
             // community
             commands::community::get_community_feed,
             commands::community::get_trending_topics,
             commands::community::repost,
+            commands::community::create_post,
+            commands::community::add_post_comment,
+            commands::community::get_post_comments,
+            commands::community::toggle_helpful_post,
+            commands::community::get_helpful_posts,
+            commands::community::get_my_posts,
+            commands::community::get_ai_post_insight,
             // ai
             commands::ai::generate_post_insight,
             commands::ai::get_mood,
+            commands::ai::chat_with_ai,
+            // chat
+            commands::chat::get_chat_sessions,
+            commands::chat::create_chat_session,
+            commands::chat::update_session_title,
+            commands::chat::get_chat_history,
+            commands::chat::save_chat_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

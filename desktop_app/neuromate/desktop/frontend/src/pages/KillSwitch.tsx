@@ -60,7 +60,7 @@ export default function KillSwitch() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-b from-red-50/30 to-white">
+    <div className="h-full overflow-y-auto bg-linear-to-b from-red-50/30 to-white">
       {/* Header */}
       <div className="px-6 py-5 border-b border-red-100 bg-red-50/50">
         <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ export default function KillSwitch() {
             <h1 className="text-xl font-heading font-bold text-[hsl(232_45%_16%)]">
               Kill Switch
             </h1>
-            <p className="text-sm text-[hsl(232_20%_50%)] mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Emergency stop for all NeuroMate AI processes
             </p>
           </div>

@@ -28,11 +28,11 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
   return (
     <div className={cn(
       "glass-card rounded-2xl p-4 flex flex-col gap-3 hover-glow transition-all",
-      isJoined && "border-[hsl(258_100%_65%_/_0.25)]"
+      isJoined && "border-[hsl(258_100%_65%/0.25)]"
     )}>
       {/* Badges row */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[hsl(258_30%_95%)] text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)]">
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)]">
           {initial.category}
         </span>
         <span className={cn(
@@ -48,7 +48,7 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
         <h3 className="text-sm font-heading font-bold text-[hsl(232_45%_16%)] leading-snug mb-1">
           {initial.title}
         </h3>
-        <p className="text-xs text-[hsl(232_20%_50%)] leading-relaxed line-clamp-2">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
           {initial.description}
         </p>
       </div>
@@ -62,7 +62,7 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
       {/* Progress bar (if joined) */}
       {isJoined && initial.progress !== undefined && (
         <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] font-semibold text-[hsl(232_20%_50%)]">
+          <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
             <span>Progress</span>
             <span>{progress}%</span>
           </div>
@@ -88,7 +88,7 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
         className={cn(
           "mt-auto w-full py-2 rounded-xl text-xs font-heading font-semibold flex items-center justify-center gap-1.5 transition-all",
           isJoined
-            ? "bg-[hsl(258_30%_95%)] text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)] hover:bg-[hsl(258_30%_92%)]"
+            ? "bg-muted text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)] hover:bg-[hsl(258_30%_92%)]"
             : "bg-gradient-primary text-[hsl(232_45%_16%)] hover-glow"
         )}
       >

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   MessageCircle, Trophy, Users, TrendingUp, Bookmark, Settings2,
   Search, Plus, Target, Zap, Heart, Brain, Flame, MessageCircleQuestion, X,
@@ -11,38 +12,8 @@ import QuestionCard, { Question } from "@/components/community/QuestionCard";
 import TrendingTopicCard, { TrendingTopic } from "@/components/community/TrendingTopicCard";
 import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
 
-// ── Mock Data ─────────────────────────────────────────────────────────────
-
-const MOCK_POSTS: Post[] = [
-  {
-    id: "1",
-    user: { name: "Sarah Chen", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
-    mood: "motivated", moodEmoji: "🔥", productivityScore: 85,
-    content: "Just completed my first 7-day focus challenge! The Pomodoro technique really works. Started with 2 sessions a day and now I'm consistently doing 6. My productivity has improved so much! 🎯",
-    image: null, timestamp: "2 hours ago", likes: 24, comments: 8, isHelpful: true,
-  },
-  {
-    id: "2",
-    user: { name: "Alex Kumar", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
-    mood: "calm", moodEmoji: "😌", productivityScore: 72,
-    content: "Does anyone have tips for maintaining evening routines? I struggle with consistency after 8 PM. Would love to hear what works for you!",
-    image: null, timestamp: "5 hours ago", likes: 12, comments: 15, isHelpful: false,
-  },
-  {
-    id: "3",
-    user: { name: "Maya Rodriguez", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya" },
-    mood: "productive", moodEmoji: "🟢", productivityScore: 91,
-    content: "Sharing my weekly dashboard! This app has been a game-changer for tracking my mental health journey. The AI insights are incredibly helpful. 📊",
-    image: null, timestamp: "1 day ago", likes: 45, comments: 12, isHelpful: true,
-  },
-  {
-    id: "4",
-    user: { name: "Riya Mehta", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Riya" },
-    mood: "curious", moodEmoji: "🤔", productivityScore: 68,
-    content: "Started journaling every morning for 10 minutes. Day 14 and already noticing my anxiety levels dropping. Highly recommend trying it if you haven't already.",
-    image: null, timestamp: "2 days ago", likes: 31, comments: 6, isHelpful: true,
-  },
-];
+// ── Dummy user for testing ──────────────────────────────────────────────────
+const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 const FEED_FILTERS = ["Newest", "Most Helpful", "Most Liked", "Following"] as const;
 
@@ -64,17 +35,41 @@ type TabId = typeof TABS[number]["id"];
 function FeedTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [filter, setFilter] = useState<string>("Newest");
-  const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handlePost = (content: string, mood: string | null) => {
-    const newPost: Post = {
-      id: String(Date.now()),
-      user: { name: "You", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User" },
-      mood: mood ?? "motivated", moodEmoji: "✨", productivityScore: undefined,
-      content, image: null, timestamp: "Just now", likes: 0, comments: 0, isHelpful: false,
-    };
-    setPosts([newPost, ...posts]);
+  const fetchFeed = async () => {
+    try {
+      setLoading(true);
+      const data: Post[] = await invoke("get_community_feed");
+      setPosts(data);
+    } catch (e) {
+      console.error("Failed to load feed", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, []);
+
+  const handlePost = async (content: string, mood: string | null) => {
+    try {
+      await invoke("create_post", {
+        authorId: DUMMY_USER_ID,
+        content,
+        mood: mood ?? "motivated",
+        moodEmoji: "✨",
+        imageUrl: null,
+        productivityScore: null
+      });
+      fetchFeed();
+      setShowCreate(false);
+    } catch (e) {
+      console.error("Failed to create post", e);
+    }
   };
 
   const filtered = posts.filter((p) =>
@@ -121,11 +116,12 @@ function FeedTab() {
       />
 
       {/* Posts */}
-      {filtered.map((post) => (
-        <PostCard key={post.id} post={post} />
+      {loading && <p className="text-center text-xs text-[hsl(232_20%_55%)] mt-4">Loading feed...</p>}
+      {!loading && filtered.map((post) => (
+        <PostCard key={post.id} post={post} onInteraction={fetchFeed} />
       ))}
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="glass-card rounded-2xl p-8 text-center">
           <p className="text-sm text-[hsl(232_20%_55%)]">No posts match your search.</p>
         </div>
@@ -162,7 +158,7 @@ function ChallengesTab() {
   return (
     <div className="space-y-4">
       {/* Banner */}
-      <div className="glass-card rounded-2xl p-5 bg-gradient-to-r from-[hsl(258_100%_65%_/_0.08)] to-orange-500/5 border border-[hsl(258_20%_88%)]">
+      <div className="glass-card rounded-2xl p-5 bg-linear-to-r from-[hsl(258_100%_65%/0.08)] to-orange-500/5 border border-[hsl(258_20%_88%)]">
         <h2 className="text-base font-heading font-bold gradient-text flex items-center gap-2 mb-1">
           <Trophy size={18} className="text-orange-500" /> Community Challenges
         </h2>
@@ -220,7 +216,7 @@ function QATab() {
   return (
     <div className="space-y-4">
       {/* Banner */}
-      <div className="glass-card rounded-2xl p-5 bg-gradient-to-r from-blue-500/8 to-[hsl(258_100%_65%_/_0.05)] border border-[hsl(258_20%_88%)]">
+      <div className="glass-card rounded-2xl p-5 bg-linear-to-r from-blue-500/8 to-[hsl(258_100%_65%/0.05)] border border-[hsl(258_20%_88%)]">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-base font-heading font-bold gradient-text flex items-center gap-2 mb-1">
@@ -267,24 +263,24 @@ function QATab() {
           <div className="glass-card rounded-2xl p-5 w-[480px] space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-heading font-bold text-[hsl(232_45%_16%)]">Ask a Question</h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-[hsl(258_30%_95%)] text-[hsl(232_20%_55%)] transition-all"><X size={14} /></button>
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-muted text-[hsl(232_20%_55%)] transition-all"><X size={14} /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-semibold text-[hsl(232_20%_50%)] block mb-1">Question Title</label>
-                <input value={qTitle} onChange={(e) => setQTitle(e.target.value)} placeholder="e.g. How do I stay consistent with…" className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%_/_0.4)] text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
+                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Question Title</label>
+                <input value={qTitle} onChange={(e) => setQTitle(e.target.value)} placeholder="e.g. How do I stay consistent with…" className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%/0.4)] text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[hsl(232_20%_50%)] block mb-1">Description</label>
-                <textarea value={qDesc} onChange={(e) => setQDesc(e.target.value)} placeholder="Provide more details…" rows={3} className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%_/_0.4)] resize-none text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
+                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Description</label>
+                <textarea value={qDesc} onChange={(e) => setQDesc(e.target.value)} placeholder="Provide more details…" rows={3} className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%/0.4)] resize-none text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-[hsl(232_20%_50%)] block mb-1">Tags (comma separated)</label>
-                <input value={qTags} onChange={(e) => setQTags(e.target.value)} placeholder="e.g. productivity, wellness" className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%_/_0.4)] text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
+                <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Tags (comma separated)</label>
+                <input value={qTags} onChange={(e) => setQTags(e.target.value)} placeholder="e.g. productivity, wellness" className="w-full text-xs px-3 py-2 rounded-xl bg-[hsl(258_30%_97%)] border border-[hsl(258_20%_90%)] outline-none focus:border-[hsl(258_100%_65%/0.4)] text-[hsl(232_35%_25%)] placeholder:text-[hsl(232_20%_65%)]" />
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 pt-1">
-              <button onClick={() => setShowModal(false)} className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-[hsl(258_20%_90%)] text-[hsl(232_20%_50%)] hover:bg-[hsl(258_30%_95%)] transition-all">Cancel</button>
+              <button onClick={() => setShowModal(false)} className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-[hsl(258_20%_90%)] text-muted-foreground hover:bg-muted transition-all">Cancel</button>
               <button onClick={() => { setShowModal(false); setQTitle(""); setQDesc(""); setQTags(""); }} disabled={!qTitle.trim()} className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-gradient-primary text-[hsl(232_45%_16%)] hover-glow disabled:opacity-40 transition-all">Post Question</button>
             </div>
           </div>
@@ -314,7 +310,7 @@ function TrendingTab() {
   return (
     <div className="space-y-4">
       {/* Banner */}
-      <div className="glass-card rounded-2xl p-5 bg-gradient-to-r from-red-500/8 to-orange-500/5 border border-[hsl(258_20%_88%)]">
+      <div className="glass-card rounded-2xl p-5 bg-linear-to-r from-red-500/8 to-orange-500/5 border border-[hsl(258_20%_88%)]">
         <h2 className="text-base font-heading font-bold gradient-text flex items-center gap-2 mb-1">
           <Flame size={18} className="text-red-500" /> Trending Topics
         </h2>
@@ -323,7 +319,7 @@ function TrendingTab() {
 
       {/* Tag pills */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <div className="flex items-center gap-1 text-[11px] font-bold text-[hsl(232_20%_50%)]">
+        <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
           <TrendingUp size={12} /> Trending:
         </div>
         {TOP_TAGS.map((tag) => (
@@ -334,7 +330,7 @@ function TrendingTab() {
               "px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all",
               activeTag === tag
                 ? "bg-gradient-primary text-[hsl(232_45%_16%)]"
-                : "bg-[hsl(258_30%_95%)] text-[hsl(258_60%_45%)] hover:bg-[hsl(258_100%_65%_/_0.15)] border border-[hsl(258_20%_88%)]"
+                : "bg-muted text-[hsl(258_60%_45%)] hover:bg-[hsl(258_100%_65%_/_0.15)] border border-[hsl(258_20%_88%)]"
             )}
           >
             {tag}
@@ -356,27 +352,46 @@ function TrendingTab() {
   );
 }
 
-const MY_POSTS: Post[] = [
-  {
-    id: "my-1",
-    user: { name: "You", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User" },
-    mood: "productive", moodEmoji: "🟢", productivityScore: 88,
-    content: "Just hit a 14-day journaling streak! It's incredible how much clarity writing brings. If you haven't started yet, start with just 3 sentences a day. 📓",
-    image: null, timestamp: "3 days ago", likes: 18, comments: 4, isHelpful: true,
-  },
-];
-
 function MyPostsTab() {
   const [showCreate, setShowCreate] = useState(false);
-  const [posts, setPosts] = useState<Post[]>(MY_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [view, setView] = useState<"Authored" | "Helpful">("Authored");
+  const [loading, setLoading] = useState(true);
 
-  const handlePost = (content: string, mood: string | null) => {
-    setPosts([{
-      id: String(Date.now()),
-      user: { name: "You", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User" },
-      mood: mood ?? "motivated", moodEmoji: "✨",
-      content, image: null, timestamp: "Just now", likes: 0, comments: 0, isHelpful: false,
-    }, ...posts]);
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const data: Post[] = await invoke(view === "Authored" ? "get_my_posts" : "get_helpful_posts", {
+        authorId: DUMMY_USER_ID,
+        userId: DUMMY_USER_ID,
+      });
+      setPosts(data);
+    } catch (e) {
+      console.error("Failed to load posts", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, [view]);
+
+  const handlePost = async (content: string, mood: string | null) => {
+    try {
+      await invoke("create_post", {
+        authorId: DUMMY_USER_ID,
+        content,
+        mood: mood ?? "motivated",
+        moodEmoji: "✨",
+        imageUrl: null,
+        productivityScore: null
+      });
+      if (view === "Authored") fetchPosts();
+      setShowCreate(false);
+    } catch (e) {
+      console.error("Failed to create post", e);
+    }
   };
 
   return (
@@ -384,35 +399,47 @@ function MyPostsTab() {
       {/* Header */}
       <div className="glass-card rounded-2xl p-5 border border-[hsl(258_20%_88%)]">
         <h2 className="text-base font-heading font-bold text-[hsl(232_45%_16%)] flex items-center gap-2 mb-1">
-          <Bookmark size={16} className="text-[hsl(258_100%_65%)]" /> My Posts
+          <Bookmark size={16} className="text-[hsl(258_100%_65%)]" /> My Collection
         </h2>
-        <p className="text-xs text-[hsl(232_20%_55%)]">View and manage your contributions to the community.</p>
+        <p className="text-xs text-[hsl(232_20%_55%)]">View your authored posts and helpful saves.</p>
+        
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => setView("Authored")} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all", view === "Authored" ? "bg-gradient-primary text-[hsl(232_45%_16%)]" : "bg-[hsl(258_30%_97%)] text-[hsl(232_20%_55%)] hover:bg-[hsl(258_30%_93%)]")}>Authored Posts</button>
+          <button onClick={() => setView("Helpful")} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all", view === "Helpful" ? "bg-gradient-primary text-[hsl(232_45%_16%)]" : "bg-[hsl(258_30%_97%)] text-[hsl(232_20%_55%)] hover:bg-[hsl(258_30%_93%)]")}>Saved (Helpful)</button>
+        </div>
       </div>
 
       {/* Create post */}
-      <CreatePostBox
-        isExpanded={showCreate}
-        onExpand={() => setShowCreate(true)}
-        onCollapse={() => setShowCreate(false)}
-        onPost={handlePost}
-      />
+      {view === "Authored" && (
+        <CreatePostBox
+          isExpanded={showCreate}
+          onExpand={() => setShowCreate(true)}
+          onCollapse={() => setShowCreate(false)}
+          onPost={handlePost}
+        />
+      )}
 
       {/* Posts */}
-      {posts.length > 0 ? (
+      {loading && <p className="text-center text-xs text-[hsl(232_20%_55%)] mt-4">Loading posts...</p>}
+      {!loading && posts.length > 0 ? (
         <div className="space-y-3">
-          {posts.map((p) => <PostCard key={p.id} post={p} />)}
+          {posts.map((p) => <PostCard key={p.id} post={p} onInteraction={fetchPosts} />)}
         </div>
-      ) : (
+      ) : (!loading &&
         <div className="glass-card rounded-2xl p-10 text-center space-y-3">
           <Bookmark size={36} className="text-[hsl(258_30%_85%)] mx-auto" />
-          <p className="text-sm font-semibold text-[hsl(232_45%_16%)]">No posts yet</p>
-          <p className="text-xs text-[hsl(232_20%_55%)]">Share your experience to inspire the community.</p>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-primary text-[hsl(232_45%_16%)] text-xs font-semibold hover-glow transition-all"
-          >
-            <Plus size={13} /> Create First Post
-          </button>
+          <p className="text-sm font-semibold text-[hsl(232_45%_16%)]">No posts found</p>
+          <p className="text-xs text-[hsl(232_20%_55%)]">
+            {view === "Authored" ? "Share your experience to inspire the community." : "You haven't saved any helpful posts yet."}
+          </p>
+          {view === "Authored" && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-primary text-[hsl(232_45%_16%)] text-xs font-semibold hover-glow transition-all"
+            >
+              <Plus size={13} /> Create First Post
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -479,7 +506,7 @@ function SettingsTab() {
   return (
     <div className="space-y-4 pb-4">
       {/* Banner */}
-      <div className="glass-card rounded-2xl p-5 bg-gradient-to-r from-[hsl(258_100%_65%_/_0.07)] to-purple-500/5 border border-[hsl(258_20%_88%)]">
+      <div className="glass-card rounded-2xl p-5 bg-linear-to-r from-[hsl(258_100%_65%/0.07)] to-purple-500/5 border border-[hsl(258_20%_88%)]">
         <h2 className="text-base font-heading font-bold gradient-text flex items-center gap-2 mb-1">
           <Settings2 size={16} /> Community Settings
         </h2>
@@ -499,13 +526,13 @@ function SettingsTab() {
         <SectionHeader icon={MessageCircle} color="bg-amber-400" title="Notifications" desc="Choose how and when you want to be notified." />
         <div className="grid grid-cols-2 gap-x-6">
           <div>
-            <p className="text-[10px] font-bold text-[hsl(232_20%_50%)] uppercase tracking-wide mb-2">Activity</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Activity</p>
             <SettingRow label="Replies to posts" checked={notif.replies} onChange={(v) => setNotif({ ...notif, replies: v })} />
             <SettingRow label="Likes on posts" checked={notif.likes} onChange={(v) => setNotif({ ...notif, likes: v })} />
             <SettingRow label="Mentions" checked={notif.mentions} onChange={(v) => setNotif({ ...notif, mentions: v })} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-[hsl(232_20%_50%)] uppercase tracking-wide mb-2">Channels</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Channels</p>
             <SettingRow label="Daily Digest" checked={notif.digest} onChange={(v) => setNotif({ ...notif, digest: v })} />
             <SettingRow label="Push Notifications" checked={notif.push} onChange={(v) => setNotif({ ...notif, push: v })} />
             <SettingRow label="Email Notifications" checked={notif.email} onChange={(v) => setNotif({ ...notif, email: v })} />
@@ -548,7 +575,7 @@ function SettingsTab() {
         {[{ name: "SpamBot99", date: "Blocked Nov 12, 2024" }, { name: "NegativeVibes", date: "Blocked Oct 24, 2024" }].map((u) => (
           <div key={u.name} className="flex items-center justify-between py-2 border-b border-[hsl(258_20%_93%)] last:border-0">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-full bg-[hsl(258_30%_92%)] flex items-center justify-center text-[10px] font-bold text-[hsl(232_20%_50%)]">
+              <div className="h-7 w-7 rounded-full bg-[hsl(258_30%_92%)] flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                 {u.name[0]}
               </div>
               <div>
@@ -626,7 +653,7 @@ export default function Community() {
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-semibold whitespace-nowrap transition-all",
                 activeTab === id
                   ? "bg-gradient-primary text-[hsl(232_45%_16%)] shadow-sm"
-                  : "text-[hsl(232_20%_55%)] hover:bg-[hsl(258_30%_95%)]"
+                  : "text-[hsl(232_20%_55%)] hover:bg-muted"
               )}
             >
               <Icon size={12} />

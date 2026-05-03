@@ -110,3 +110,15 @@ export async function greet(name: string): Promise<string> {
     return "";
   }
 }
+
+/**
+ * Check the connection status to the server/database.
+ */
+export async function checkConnection(): Promise<boolean> {
+  try {
+    return await invoke<boolean>("check_connection");
+  } catch (err) {
+    console.error("[tauri] check_connection failed:", err);
+    return false;
+  }
+}

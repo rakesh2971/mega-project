@@ -126,3 +126,28 @@ pub async fn get_ai_post_insight(db_state: State<'_, DbState>, post_id: String, 
     
     Ok(insight)
 }
+
+#[tauri::command]
+pub async fn get_challenges(db_state: State<'_, DbState>, user_id: String) -> Result<Vec<db::community::Challenge>, String> {
+    let u_uuid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
+    db::community::get_challenges(&db_state.0, u_uuid)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn join_challenge(db_state: State<'_, DbState>, user_id: String, challenge_id: String) -> Result<(), String> {
+    let u_uuid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
+    let c_uuid = Uuid::parse_str(&challenge_id).map_err(|e| e.to_string())?;
+    db::community::join_challenge(&db_state.0, u_uuid, c_uuid)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_active_challenges(db_state: State<'_, DbState>, user_id: String) -> Result<Vec<db::community::Challenge>, String> {
+    let u_uuid = Uuid::parse_str(&user_id).map_err(|e| e.to_string())?;
+    db::community::get_active_challenges(&db_state.0, u_uuid)
+        .await
+        .map_err(|e| e.to_string())
+}

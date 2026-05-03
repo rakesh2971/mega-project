@@ -3,7 +3,7 @@ import { Users, Clock, Trophy, ArrowRight, Flame } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface Challenge {
-  id: number;
+  id: string;
   title: string;
   description: string;
   duration: string;
@@ -21,9 +21,29 @@ const LEVEL_STYLES: Record<string, string> = {
   Hard: "bg-red-50 text-red-600 border border-red-200",
 };
 
+import { invoke } from "@tauri-apps/api/core";
+
 export default function ChallengeCard({ challenge: initial }: { challenge: Challenge }) {
   const [isJoined, setIsJoined] = useState(initial.isJoined);
   const [progress] = useState(initial.progress ?? 0);
+  const [loading, setLoading] = useState(false);
+
+  // Use a hardcoded dummy UUID for testing
+  const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
+
+  const handleJoin = async () => {
+    if (isJoined) return; // Do nothing if already joined, or handle leave/continue
+    setLoading(true);
+    try {
+      await invoke("join_challenge", { userId: DUMMY_USER_ID, challengeId: initial.id });
+      setIsJoined(true);
+      window.dispatchEvent(new CustomEvent("challengeJoined"));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={cn(
@@ -84,18 +104,19 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
       {/* CTA */}
       <button
         id={`btn-challenge-${initial.id}`}
-        onClick={() => setIsJoined(!isJoined)}
+        onClick={handleJoin}
+        disabled={loading}
         className={cn(
           "mt-auto w-full py-2 rounded-xl text-xs font-heading font-semibold flex items-center justify-center gap-1.5 transition-all",
           isJoined
             ? "bg-muted text-[hsl(258_60%_45%)] border border-[hsl(258_20%_88%)] hover:bg-[hsl(258_30%_92%)]"
-            : "bg-gradient-primary text-[hsl(232_45%_16%)] hover-glow"
+            : "bg-gradient-primary text-[hsl(232_45%_16%)] hover-glow disabled:opacity-50"
         )}
       >
         {isJoined ? (
           <><ArrowRight size={12} /> Continue Challenge</>
         ) : (
-          <>Join Challenge</>
+          <>{loading ? "Joining..." : "Join Challenge"}</>
         )}
       </button>
     </div>

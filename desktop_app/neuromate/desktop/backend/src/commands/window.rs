@@ -41,3 +41,14 @@ pub fn trigger_kill_switch(app: AppHandle) {
 pub fn greet(name: &str) -> String {
     format!("Hello, {}! Welcome to NeuroMate!", name)
 }
+
+/// Checks if the database is connected
+#[tauri::command]
+pub async fn check_connection(app: AppHandle) -> Result<bool, String> {
+    if let Some(db_state) = app.try_state::<crate::DbState>() {
+        if sqlx::query("SELECT 1").execute(&db_state.0).await.is_ok() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}

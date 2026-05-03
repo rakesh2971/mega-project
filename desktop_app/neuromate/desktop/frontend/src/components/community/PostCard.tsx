@@ -55,6 +55,10 @@ export default function PostCard({ post, onInteraction }: { post: Post, onIntera
   };
 
   const handleHelpful = async () => {
+    const previousState = helpful;
+    // Optimistic update so it glows yellow instantly
+    setHelpful(!previousState);
+    
     try {
       const isNowHelpful: boolean = await invoke("toggle_helpful_post", {
         userId: DUMMY_USER_ID,
@@ -64,6 +68,8 @@ export default function PostCard({ post, onInteraction }: { post: Post, onIntera
       if (onInteraction) onInteraction();
     } catch (e) {
       console.error("Failed to toggle helpful:", e);
+      // Revert if the backend call fails
+      setHelpful(previousState);
     }
   };
 

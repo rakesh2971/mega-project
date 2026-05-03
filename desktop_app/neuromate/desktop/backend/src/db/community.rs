@@ -20,6 +20,22 @@ pub struct CommunityPost {
 }
 
 #[derive(serde::Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct Challenge {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub duration: String,
+    pub level: String,
+    pub participants: i32,
+    pub category: String,
+    #[sqlx(default)]
+    pub is_joined: bool,
+    pub progress: Option<i32>,
+    pub streak: Option<i32>,
+}
+
+#[derive(serde::Serialize, FromRow)]
 pub struct TrendingTopic {
     pub id: Uuid,
     pub tag: String,
@@ -111,6 +127,50 @@ pub async fn ensure_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     )
     .execute(pool)
     .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS nm_challenges (
+            id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            title       VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            duration    VARCHAR(50) NOT NULL,
+            level       VARCHAR(50) NOT NULL,
+            participants INT DEFAULT 0,
+            category    VARCHAR(100) NOT NULL,
+            created_at  TIMESTAMPTZ DEFAULT NOW()
+        )"
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS user_challenges (
+            id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id      UUID REFERENCES app_users(id) ON DELETE CASCADE,
+            challenge_id UUID REFERENCES nm_challenges(id) ON DELETE CASCADE,
+            progress     INT DEFAULT 0,
+            streak       INT DEFAULT 0,
+            joined_at    TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(user_id, challenge_id)
+        )"
+    )
+    .execute(pool)
+    .await?;
+
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM nm_challenges").fetch_one(pool).await?;
+    if count == 0 {
+        sqlx::query(
+            "INSERT INTO nm_challenges (title, description, duration, level, participants, category) VALUES 
+            ('30-Day Productivity Sprint', 'Boost your focus and output with daily micro-tasks designed to build consistency.', '30 Days', 'Medium', 3244, 'Productivity'),
+            ('Morning Mindfulness', 'Start your day with 10 minutes of guided meditation and intention setting.', '14 Days', 'Easy', 1205, 'Wellbeing'),
+            ('Deep Work Week', 'Commit to 2 hours of distraction-free deep work every day for a week.', '7 Days', 'Hard', 850, 'Productivity'),
+            ('Hydration Hero', 'Track your water intake and hit your daily hydration goals every day.', '21 Days', 'Easy', 5600, 'Health'),
+            ('Learn a New Skill', 'Dedicate 30 minutes daily to learning something completely new.', '10 Days', 'Medium', 940, 'Skill Growth'),
+            ('Digital Detox Weekend', 'Disconnect from screens and reconnect with the real world around you.', '2 Days', 'Medium', 2100, 'Wellbeing')"
+        )
+        .execute(pool)
+        .await?;
+    }
 
     Ok(())
 }
@@ -311,4 +371,60 @@ pub async fn repost(pool: &PgPool, original_post_id: Uuid, author_id: Uuid, thou
     .await?;
     
     Ok(row.try_get("id")?)
+}
+
+pub async fn get_challenges(pool: &PgPool, user_id: Uuid) -> Result<Vec<Challenge>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, Challenge>(
+        r#"
+        SELECT 
+            c.id::text, c.title, c.description, c.duration, c.level, c.participants, c.category,
+            (uc.id IS NOT NULL) as is_joined, uc.progress, uc.streak
+        FROM nm_challenges c
+        LEFT JOIN user_challenges uc ON c.id = uc.challenge_id AND uc.user_id = $1
+        ORDER BY c.created_at ASC
+        "#
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}
+
+pub async fn join_challenge(pool: &PgPool, user_id: Uuid, challenge_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO user_challenges (user_id, challenge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+    )
+    .bind(user_id)
+    .bind(challenge_id)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "UPDATE nm_challenges SET participants = participants + 1 WHERE id = $1"
+    )
+    .bind(challenge_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_active_challenges(pool: &PgPool, user_id: Uuid) -> Result<Vec<Challenge>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, Challenge>(
+        r#"
+        SELECT 
+            c.id::text, c.title, c.description, c.duration, c.level, c.participants, c.category,
+            true as is_joined, uc.progress, uc.streak
+        FROM nm_challenges c
+        JOIN user_challenges uc ON c.id = uc.challenge_id
+        WHERE uc.user_id = $1
+        ORDER BY uc.joined_at DESC
+        "#
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
 }

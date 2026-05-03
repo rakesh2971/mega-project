@@ -132,14 +132,7 @@ function FeedTab() {
 
 // ── Placeholder tabs (filled in next steps) ──────────────────────────────
 
-const MOCK_CHALLENGES: Challenge[] = [
-  { id: 1, title: "30-Day Productivity Sprint", description: "Boost your focus and output with daily micro-tasks designed to build consistency.", duration: "30 Days", level: "Medium", participants: 3244, category: "Productivity", isJoined: true, progress: 60, streak: 6 },
-  { id: 2, title: "Morning Mindfulness", description: "Start your day with 10 minutes of guided meditation and intention setting.", duration: "14 Days", level: "Easy", participants: 1205, category: "Wellbeing", isJoined: false },
-  { id: 3, title: "Deep Work Week", description: "Commit to 2 hours of distraction-free deep work every day for a week.", duration: "7 Days", level: "Hard", participants: 850, category: "Productivity", isJoined: false },
-  { id: 4, title: "Hydration Hero", description: "Track your water intake and hit your daily hydration goals every day.", duration: "21 Days", level: "Easy", participants: 5600, category: "Health", isJoined: true, progress: 15, streak: 3 },
-  { id: 5, title: "Learn a New Skill", description: "Dedicate 30 minutes daily to learning something completely new.", duration: "10 Days", level: "Medium", participants: 940, category: "Skill Growth", isJoined: false },
-  { id: 6, title: "Digital Detox Weekend", description: "Disconnect from screens and reconnect with the real world around you.", duration: "2 Days", level: "Medium", participants: 2100, category: "Wellbeing", isJoined: false },
-];
+// MOCK_CHALLENGES removed, fetching from db
 
 const CHALLENGE_CATS = [
   { id: "all",          label: "All",         icon: Target },
@@ -151,9 +144,27 @@ const CHALLENGE_CATS = [
 
 function ChallengesTab() {
   const [cat, setCat] = useState("all");
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+
+  const fetchChallenges = async () => {
+    try {
+      const data: Challenge[] = await invoke("get_challenges", { userId: DUMMY_USER_ID });
+      setChallenges(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchChallenges();
+    const handleUpdate = () => fetchChallenges();
+    window.addEventListener("challengeJoined", handleUpdate);
+    return () => window.removeEventListener("challengeJoined", handleUpdate);
+  }, []);
+
   const filtered = cat === "all"
-    ? MOCK_CHALLENGES
-    : MOCK_CHALLENGES.filter((c) => c.category.toLowerCase().includes(cat === "skill" ? "skill" : cat));
+    ? challenges
+    : challenges.filter((c) => c.category.toLowerCase().includes(cat === "skill" ? "skill" : cat));
 
   return (
     <div className="space-y-4">
@@ -192,15 +203,47 @@ function ChallengesTab() {
 }
 
 const MOCK_QUESTIONS: Question[] = [
-  { id: 1, title: "How do I stay consistent in my study routine?", description: "I start strong every week but by Wednesday I lose motivation. Does anyone use a specific tracking method?", tags: ["Productivity", "Study"], author: "User123", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User123", timeAgo: "2 hours ago", upvotes: 12, answers: 5, isAnswered: true },
-  { id: 2, title: "Best CBT techniques for imposter syndrome?", description: "I just started a new job and feel like I don't belong. Looking for quick CBT exercises I can do at my desk.", tags: ["Wellness", "CBT", "Career"], author: "DevSarah", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah", timeAgo: "4 hours ago", upvotes: 24, answers: 8, isAnswered: false },
-  { id: 3, title: "Can I sync NeuroMate tasks with Google Calendar?", description: "I love the app but I need my tasks to show up on my main calendar. Is this feature available?", tags: ["App Feature", "Tech"], author: "MikeT", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike", timeAgo: "1 day ago", upvotes: 8, answers: 1, isAnswered: false },
-  { id: 4, title: "Morning routine ideas for non-morning people", description: "I struggle to wake up. What are some gentle routines to get the brain moving without caffeine overload?", tags: ["Wellness", "Routine"], author: "SleepyHead", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sleepy", timeAgo: "2 days ago", upvotes: 45, answers: 12, isAnswered: true },
+  { 
+    id: 1, title: "How do I stay consistent in my study routine?", description: "I start strong every week but by Wednesday I lose motivation. Does anyone use a specific tracking method?", tags: ["Productivity", "Study"], author: "User123", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User123", timeAgo: "2 hours ago", upvotes: 12, answers: 5, isAnswered: true,
+    answersList: [
+      { id: 101, author: "StudyMaster", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Master", content: "I recommend the Pomodoro technique. Break it into 25 min chunks. Also, tracking in NeuroMate really helps!", upvotes: 8, timeAgo: "1 hour ago", isAccepted: true },
+      { id: 102, author: "JaneDoe", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane", content: "Don't rely on motivation, rely on discipline. Build a system, not a goal.", upvotes: 3, timeAgo: "30 mins ago" }
+    ]
+  },
+  { 
+    id: 2, title: "Best CBT techniques for imposter syndrome?", description: "I just started a new job and feel like I don't belong. Looking for quick CBT exercises I can do at my desk.", tags: ["Wellness", "CBT", "Career"], author: "DevSarah", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah", timeAgo: "4 hours ago", upvotes: 24, answers: 8, isAnswered: false,
+    answersList: [
+      { id: 103, author: "DrPhil", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Phil", content: "Try the 'evidence log' technique. Write down actual evidence that contradicts your feeling of being an imposter.", upvotes: 15, timeAgo: "2 hours ago" }
+    ]
+  },
+  { 
+    id: 3, title: "Can I sync NeuroMate tasks with Google Calendar?", description: "I love the app but I need my tasks to show up on my main calendar. Is this feature available?", tags: ["App Feature", "Tech"], author: "MikeT", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike", timeAgo: "1 day ago", upvotes: 8, answers: 1, isAnswered: false,
+    answersList: [
+      { id: 104, author: "SupportTeam", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Support", content: "We are currently working on a Google Calendar integration. Stay tuned for the next update!", upvotes: 5, timeAgo: "5 hours ago" }
+    ]
+  },
+  { 
+    id: 4, title: "Morning routine ideas for non-morning people", description: "I struggle to wake up. What are some gentle routines to get the brain moving without caffeine overload?", tags: ["Wellness", "Routine"], author: "SleepyHead", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sleepy", timeAgo: "2 days ago", upvotes: 45, answers: 12, isAnswered: true,
+    answersList: [
+      { id: 105, author: "MorningOwl", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Owl", content: "Start with 10 mins of sunlight and a large glass of water. It signals your circadian rhythm to wake up.", upvotes: 20, timeAgo: "1 day ago", isAccepted: true },
+      { id: 106, author: "ZenMaster", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zen", content: "Light stretching in bed before even standing up helps blood flow gently.", upvotes: 12, timeAgo: "12 hours ago" }
+    ]
+  },
 ];
 
 const QA_SORTS = ["Recent", "Most Upvoted", "Unanswered"] as const;
 
-function QATab() {
+function QATab({ 
+  questions, 
+  onUpvote, 
+  onAnswerSubmit,
+  onBookmark
+}: { 
+  questions: Question[];
+  onUpvote: (id: number, increment: boolean) => void;
+  onAnswerSubmit: (id: number, content: string) => void;
+  onBookmark: (id: number, bookmarked: boolean) => void;
+}) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<string>("Recent");
   const [showModal, setShowModal] = useState(false);
@@ -208,7 +251,7 @@ function QATab() {
   const [qDesc, setQDesc] = useState("");
   const [qTags, setQTags] = useState("");
 
-  const filtered = MOCK_QUESTIONS
+  const filtered = [...questions]
     .filter((q) => search === "" || q.title.toLowerCase().includes(search.toLowerCase()))
     .filter((q) => sort === "Unanswered" ? !q.isAnswered : true)
     .sort((a, b) => sort === "Most Upvoted" ? b.upvotes - a.upvotes : 0);
@@ -249,7 +292,15 @@ function QATab() {
 
       {/* Questions */}
       <div className="space-y-3">
-        {filtered.map((q) => <QuestionCard key={q.id} question={q} />)}
+        {filtered.map((q) => (
+          <QuestionCard 
+            key={q.id} 
+            question={q} 
+            onUpvote={onUpvote} 
+            onAnswerSubmit={onAnswerSubmit} 
+            onBookmark={onBookmark}
+          />
+        ))}
         {filtered.length === 0 && (
           <div className="glass-card rounded-2xl p-8 text-center">
             <p className="text-sm text-[hsl(232_20%_55%)]">No questions match your search.</p>
@@ -352,7 +403,17 @@ function TrendingTab() {
   );
 }
 
-function MyPostsTab() {
+function MyPostsTab({ 
+  savedQuestions = [], 
+  onUpvoteQuestion, 
+  onAnswerSubmitQuestion,
+  onBookmarkQuestion
+}: { 
+  savedQuestions?: Question[];
+  onUpvoteQuestion?: (id: number, increment: boolean) => void;
+  onAnswerSubmitQuestion?: (id: number, content: string) => void;
+  onBookmarkQuestion?: (id: number, bookmarked: boolean) => void;
+}) {
   const [showCreate, setShowCreate] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [view, setView] = useState<"Authored" | "Helpful">("Authored");
@@ -421,9 +482,18 @@ function MyPostsTab() {
 
       {/* Posts */}
       {loading && <p className="text-center text-xs text-[hsl(232_20%_55%)] mt-4">Loading posts...</p>}
-      {!loading && posts.length > 0 ? (
+      {!loading && (posts.length > 0 || (view === "Helpful" && savedQuestions.length > 0)) ? (
         <div className="space-y-3">
           {posts.map((p) => <PostCard key={p.id} post={p} onInteraction={fetchPosts} />)}
+          {view === "Helpful" && savedQuestions.map((q) => (
+            <QuestionCard 
+              key={`q-${q.id}`} 
+              question={q} 
+              onUpvote={onUpvoteQuestion}
+              onAnswerSubmit={onAnswerSubmitQuestion}
+              onBookmark={onBookmarkQuestion}
+            />
+          ))}
         </div>
       ) : (!loading &&
         <div className="glass-card rounded-2xl p-10 text-center space-y-3">
@@ -613,13 +683,53 @@ function SettingsTab() {
 
 export default function Community() {
   const [activeTab, setActiveTab] = useState<TabId>("feed");
+  const [questions, setQuestions] = useState<Question[]>(MOCK_QUESTIONS);
+
+  const handleUpvoteQuestion = (id: number, increment: boolean) => {
+    setQuestions((prev) => 
+      prev.map((q) => 
+        q.id === id ? { ...q, upvotes: q.upvotes + (increment ? 1 : -1) } : q
+      )
+    );
+  };
+
+  const handleAnswerSubmitQuestion = (questionId: number, content: string) => {
+    setQuestions((prev) => 
+      prev.map((q) => {
+        if (q.id === questionId) {
+          const newAnswer = {
+            id: Date.now(),
+            author: "You",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
+            content,
+            upvotes: 0,
+            timeAgo: "Just now"
+          };
+          return {
+            ...q,
+            answers: q.answers + 1,
+            answersList: [...(q.answersList || []), newAnswer]
+          };
+        }
+        return q;
+      })
+    );
+  };
+
+  const handleBookmarkQuestion = (id: number, bookmarked: boolean) => {
+    setQuestions((prev) => 
+      prev.map((q) => 
+        q.id === id ? { ...q, isBookmarked: bookmarked } : q
+      )
+    );
+  };
 
   const tabContent: Record<TabId, React.ReactNode> = {
     feed:       <FeedTab />,
     challenges: <ChallengesTab />,
-    qa:         <QATab />,
+    qa:         <QATab questions={questions} onUpvote={handleUpvoteQuestion} onAnswerSubmit={handleAnswerSubmitQuestion} onBookmark={handleBookmarkQuestion} />,
     trending:   <TrendingTab />,
-    myposts:    <MyPostsTab />,
+    myposts:    <MyPostsTab savedQuestions={questions.filter((q) => q.isBookmarked)} onUpvoteQuestion={handleUpvoteQuestion} onAnswerSubmitQuestion={handleAnswerSubmitQuestion} onBookmarkQuestion={handleBookmarkQuestion} />,
     settings:   <SettingsTab />,
   };
 

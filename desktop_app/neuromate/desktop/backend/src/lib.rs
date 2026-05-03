@@ -40,6 +40,7 @@ pub fn run() {
             commands::window::show_avatar_float,
             commands::window::show_main_window,
             commands::window::trigger_kill_switch,
+            commands::window::check_connection,
             // auth
             commands::auth::get_current_user,
             commands::auth::login_user,
@@ -55,6 +56,9 @@ pub fn run() {
             commands::community::get_helpful_posts,
             commands::community::get_my_posts,
             commands::community::get_ai_post_insight,
+            commands::community::get_challenges,
+            commands::community::join_challenge,
+            commands::community::get_active_challenges,
             // ai
             commands::ai::generate_post_insight,
             commands::ai::get_mood,

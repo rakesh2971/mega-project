@@ -21,12 +21,28 @@ const DAILY_STATS = [
   { icon: MessageCircle, label: "New Comments",    value: "340" },
 ];
 
-const ACTIVE_CHALLENGES = [
-  { title: "Focus Sprint",   desc: "25 min × 4 sessions", icon: Zap,    participants: 234 },
-  { title: "Night Routine",  desc: "7 days challenge",    icon: Target,  participants: 187 },
-];
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function CommunityRightSidebar() {
+  const [activeChallenges, setActiveChallenges] = useState<any[]>([]);
+
+  const fetchActiveChallenges = async () => {
+    try {
+      // Use the same dummy user id
+      const data: any[] = await invoke("get_active_challenges", { userId: "00000000-0000-0000-0000-000000000001" });
+      setActiveChallenges(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveChallenges();
+    const handleUpdate = () => fetchActiveChallenges();
+    window.addEventListener("challengeJoined", handleUpdate);
+    return () => window.removeEventListener("challengeJoined", handleUpdate);
+  }, []);
   return (
     <div className="w-60 shrink-0 border-l border-[hsl(258_20%_90%)] overflow-y-auto smooth-scroll scrollbar-hide bg-[hsl(258_30%_98%)] p-3 space-y-3">
       {/* Leaderboard */}
@@ -76,8 +92,8 @@ export default function CommunityRightSidebar() {
       {/* Active Challenges */}
       <div className="glass-card rounded-2xl p-3 space-y-2.5">
         <h3 className="text-xs font-heading font-bold text-[hsl(232_45%_16%)]">Active Challenges</h3>
-        {ACTIVE_CHALLENGES.map((c, i) => {
-          const Icon = c.icon;
+        {activeChallenges.map((c, i) => {
+          const Icon = c.category.toLowerCase().includes("productivity") ? Zap : Target;
           return (
             <div key={i} className="rounded-xl border border-[hsl(258_20%_90%)] p-2.5 space-y-2">
               <div className="flex items-start gap-2">
@@ -86,16 +102,19 @@ export default function CommunityRightSidebar() {
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-[hsl(232_45%_16%)]">{c.title}</p>
-                  <p className="text-[10px] text-[hsl(232_20%_55%)]">{c.desc}</p>
+                  <p className="text-[10px] text-[hsl(232_20%_55%)]">{c.duration} • {c.level}</p>
                   <p className="text-[10px] text-[hsl(232_20%_60%)] mt-0.5">{c.participants} participating</p>
                 </div>
               </div>
-              <button className="w-full py-1 rounded-lg bg-gradient-primary text-[hsl(232_45%_16%)] text-[10px] font-semibold hover-glow transition-all">
-                Join Challenge
+              <button className="w-full py-1 rounded-lg bg-[hsl(258_20%_90%)] text-[hsl(232_45%_16%)] text-[10px] font-semibold hover:bg-[hsl(258_20%_88%)] transition-all">
+                Continue Challenge
               </button>
             </div>
           );
         })}
+        {activeChallenges.length === 0 && (
+          <p className="text-xs text-[hsl(232_20%_55%)] text-center py-2">No active challenges</p>
+        )}
       </div>
     </div>
   );

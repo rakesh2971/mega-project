@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "NeuroMate - AI Companion Desktop App"
 authors = ["NeuroMate Team"]
 edition = "2021"
+default-run = "neuromate"
 
 [lib]
 name = "neuromate_lib"

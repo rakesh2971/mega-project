@@ -26,6 +26,7 @@ pub fn run() {
                         if let Err(e) = db::auth::ensure_table(&pool).await { eprintln!("[neuromate] auth table error: {}", e); }
                         if let Err(e) = db::community::ensure_tables(&pool).await { eprintln!("[neuromate] community table error: {}", e); }
                         if let Err(e) = db::chat::ensure_tables(&pool).await { eprintln!("[neuromate] chat table error: {}", e); }
+                        if let Err(e) = db::activities::ensure_tables(&pool).await { eprintln!("[neuromate] activities table error: {}", e); }
                         handle.manage(DbState(pool));
                         println!("[neuromate] Connected to DB successfully.");
                     }
@@ -69,6 +70,30 @@ pub fn run() {
             commands::chat::update_session_title,
             commands::chat::get_chat_history,
             commands::chat::save_chat_message,
+            // activities
+            commands::activities::create_task,
+            commands::activities::get_tasks,
+            commands::activities::update_task,
+            commands::activities::delete_task,
+            commands::activities::create_mood,
+            commands::activities::get_moods,
+            commands::activities::delete_mood,
+            commands::activities::create_focus_session,
+            commands::activities::get_focus_sessions,
+            commands::activities::delete_focus_session,
+            commands::activities::create_journal,
+            commands::activities::get_journals,
+            commands::activities::delete_journal,
+            commands::activities::create_routine,
+            commands::activities::get_routines,
+            commands::activities::update_routine,
+            commands::activities::delete_routine,
+            commands::activities::create_meditation,
+            commands::activities::get_meditations,
+            commands::activities::delete_meditation,
+            commands::activities::get_recent_activities,
+            commands::activities::get_heatmap,
+            commands::activities::get_dashboard_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

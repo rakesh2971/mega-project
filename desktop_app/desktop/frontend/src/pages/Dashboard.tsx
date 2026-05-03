@@ -1,13 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend,
+  XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip,
 } from "recharts";
 import {
   CheckCircle2, Clock, Flame, TrendingUp, Brain, Heart, Target,
-  Calendar, Sparkles, ListChecks, Activity, Focus, Zap,
+  Calendar, Sparkles, ListChecks, Activity, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import AddActivityDialog from "@/components/AddActivityDialog";
 
 // ── Colour tokens (matches index.css palette) ─────────────────────────────
 const PURPLE     = "hsl(258 100% 65%)";
@@ -181,11 +183,11 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
-// ── Contribution Heatmap (self-contained, no backend) ─────────────────────
+// ── Contribution Heatmap (live data from DB + fallback) ──────────────────
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-function generateHeatmapData(year: number) {
+function generateHeatmapData(year: number, liveData?: { date: string; count: number }[]) {
   const start = new Date(year, 0, 1);
   const today = new Date();
   const end = today.getFullYear() === year ? today : new Date(year, 11, 31);
@@ -197,6 +199,12 @@ function generateHeatmapData(year: number) {
   // Padded array: first `daysBack` slots are null (empty cells before Jan 1)
   const days: ({ date: Date; level: 0|1|2|3|4 } | null)[] = Array(daysBack).fill(null);
 
+  // Live data map by date string
+  const liveMap = new Map<string, number>();
+  if (liveData) {
+    for (const d of liveData) liveMap.set(d.date, d.count);
+  }
+
   const monthMap = new Map<number, number>();
   let dayCount = 0;
   const cur = new Date(start);
@@ -207,9 +215,17 @@ function generateHeatmapData(year: number) {
     const weekIdx = Math.floor((dayCount + daysBack) / 7);
     if (!monthMap.has(m)) monthMap.set(m, weekIdx);
 
-    // Deterministic pseudo-random level based on date
-    const seed = cur.getDate() * 7 + cur.getMonth() * 31;
-    const lvl = [0,0,0,1,1,2,2,3,4][seed % 9] as 0|1|2|3|4;
+    const dateStr = cur.toISOString().slice(0, 10);
+    let lvl: 0|1|2|3|4;
+    if (liveData) {
+      // Real data: map count to level
+      const count = liveMap.get(dateStr) ?? 0;
+      lvl = count === 0 ? 0 : count <= 1 ? 1 : count <= 3 ? 2 : count <= 6 ? 3 : 4;
+    } else {
+      // Fallback: pseudo-random
+      const seed = cur.getDate() * 7 + cur.getMonth() * 31;
+      lvl = [0,0,0,1,1,2,2,3,4][seed % 9] as 0|1|2|3|4;
+    }
     days.push({ date: new Date(cur), level: lvl });
     cur.setDate(cur.getDate() + 1);
     dayCount++;
@@ -225,9 +241,9 @@ function generateHeatmapData(year: number) {
 
 }
 
-function ContributionHeatmap() {
+function ContributionHeatmap({ liveData }: { liveData?: { date: string; count: number }[] }) {
   const year = new Date().getFullYear();
-  const { days, weeks, monthLabels } = useMemo(() => generateHeatmapData(year), [year]);
+  const { days, weeks, monthLabels } = useMemo(() => generateHeatmapData(year, liveData), [year, liveData]);
   const [hovered, setHovered] = useState<{ date: Date; level: number } | null>(null);
 
   const levelClass = (level: number) => {
@@ -320,15 +336,74 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
 }
 
 // ── Dashboard Page ────────────────────────────────────────────────────────
+
+const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
+
+interface DashboardStats {
+  tasks_today: number;
+  tasks_total_today: number;
+  latest_mood_level: number | null;
+  latest_mood_type: string | null;
+  focus_minutes_today: number;
+  streak_days: number;
+}
+
+interface ActivityItem {
+  activity_type: string;
+  title: string;
+  time: string;
+  date: string;
+  dot_color: string;
+}
+
+interface HeatmapDay {
+  date: string;
+  count: number;
+}
+
 export default function Dashboard() {
   const [activeRange, setActiveRange] = useState("7D");
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [liveActivities, setLiveActivities] = useState<ActivityItem[]>([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapDay[] | undefined>(undefined);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      const [s, acts, heat] = await Promise.all([
+        invoke<DashboardStats>("get_dashboard_stats", { userId: DUMMY_USER_ID }),
+        invoke<ActivityItem[]>("get_recent_activities", { userId: DUMMY_USER_ID, limit: 10 }),
+        invoke<HeatmapDay[]>("get_heatmap", { userId: DUMMY_USER_ID, year: new Date().getFullYear() }),
+      ]);
+      setStats(s);
+      setLiveActivities(acts);
+      setHeatmapData(heat);
+    } catch (e) {
+      console.error("Dashboard data fetch failed:", e);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const moodEmoji = (level: number | null) => {
+    if (!level) return "😐";
+    return ["😢", "😕", "😐", "😊", "😄"][level - 1] ?? "😐";
+  };
+  const focusDisplay = stats ? (() => {
+    const h = Math.floor(stats.focus_minutes_today / 60);
+    const m = stats.focus_minutes_today % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  })() : "0m";
 
   const snapshots = [
-    { icon: CheckCircle2, label: "Tasks Today",     value: "8/10",   sub: "80% completed",     accentColor: "#22c55e" },
-    { icon: Heart,        label: "Mood Status",     value: "😊",     sub: "Happy & Focused",   accentColor: "#f472b6" },
-    { icon: Brain,        label: "Productivity",    value: "82",     sub: "Above average",     accentColor: PURPLE },
-    { icon: Clock,        label: "Focus Time",      value: "3h 20m", sub: "12 interruptions",  accentColor: "#fb923c" },
-    { icon: Flame,        label: "Current Streak",  value: "7 days", sub: "Keep it up!",       accentColor: "#ef4444" },
+    { icon: CheckCircle2, label: "Tasks Today",     value: stats ? `${stats.tasks_today}/${stats.tasks_total_today}` : "0/0",   sub: stats ? `${stats.tasks_total_today > 0 ? Math.round((stats.tasks_today / stats.tasks_total_today) * 100) : 0}% completed` : "Log a task",     accentColor: "#22c55e" },
+    { icon: Heart,        label: "Mood Status",     value: moodEmoji(stats?.latest_mood_level ?? null),     sub: stats?.latest_mood_type?.replace("_", " ") ?? "No check-in yet",   accentColor: "#f472b6" },
+    { icon: Brain,        label: "Productivity",    value: stats ? `${Math.min(100, stats.tasks_today * 10 + stats.focus_minutes_today)}` : "—",     sub: "Calculated score",     accentColor: PURPLE },
+    { icon: Clock,        label: "Focus Time",      value: focusDisplay, sub: "Today's sessions",  accentColor: "#fb923c" },
+    { icon: Flame,        label: "Current Streak",  value: stats ? `${stats.streak_days} day${stats.streak_days !== 1 ? "s" : ""}` : "0 days", sub: stats && stats.streak_days > 0 ? "Keep it up!" : "Log to start streak",       accentColor: "#ef4444" },
   ];
 
   const habits = [
@@ -346,9 +421,12 @@ export default function Dashboard() {
           <h1 className="text-lg font-heading font-bold text-[hsl(232_45%_16%)]">Dashboard</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Your wellness journey, visualized</p>
         </div>
-        <span className="text-[10px] font-medium text-[hsl(232_20%_55%)] bg-muted px-2 py-1 rounded-full">
-          Last updated: Just now
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium text-[hsl(232_20%_55%)] bg-muted px-2 py-1 rounded-full">
+            {loadingStats ? "Updating..." : "Last updated: Just now"}
+          </span>
+          <AddActivityDialog onSuccess={fetchData} />
+        </div>
       </div>
 
       <div className="p-4 space-y-5 page-enter">
@@ -494,44 +572,48 @@ export default function Dashboard() {
           </div>
 
           {/* AI Insights */}
-          <div className="glass-card rounded-2xl p-4">
-            <SectionHeader icon={Sparkles} title="AI Insights & Recommendations" />
-            <div className="space-y-2">
-              {aiInsights.map((ins) => (
-                <div
-                  key={ins.label}
-                  className={cn(
-                    "p-2.5 rounded-xl border-l-2 text-[11px] leading-relaxed",
-                    ins.color
-                  )}
-                >
-                  <span className="font-semibold text-[hsl(232_45%_16%)]">
-                    {ins.emoji} {ins.label}:
-                  </span>{" "}
-                  <span className="text-[hsl(232_20%_45%)]">{ins.text}</span>
+          <div className="glass-card rounded-2xl p-4 flex flex-col">
+            <SectionHeader icon={Sparkles} title="AI Insights" />
+            <div className="flex-1 space-y-2 mt-1">
+              {aiInsights.map((insight, i) => (
+                <div key={i} className={cn("p-2.5 rounded-lg border-l-2 text-xs", insight.color)}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-sm">{insight.emoji}</span>
+                    <span className="font-semibold text-[hsl(232_45%_16%)]">{insight.label}</span>
+                  </div>
+                  <p className="text-[10px] text-[hsl(232_20%_55%)] leading-relaxed">{insight.text}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── 4️⃣ Contribution Heatmap ────────────────────────────────── */}
-        <ContributionHeatmap />
+        {/* 🌟 4️⃣ Contribution Heatmap 🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟 */}
+        <section>
+          <ContributionHeatmap liveData={heatmapData} />
+        </section>
 
-        {/* ── 5️⃣ Recent Activity ─────────────────────────────────────── */}
+        {/* 🌟 5️⃣ Recent Activity 🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟 */}
         <section>
           <SectionHeader icon={Clock} title="Recent Activity" />
           <div className="glass-card rounded-2xl p-4">
+            {loadingStats && <p className="text-center text-xs text-[hsl(232_20%_55%)] py-4">Loading...</p>}
+            {!loadingStats && liveActivities.length === 0 && (
+              <div className="text-center py-6 space-y-1">
+                <p className="text-xs text-[hsl(232_20%_55%)]">No activities logged yet.</p>
+                <p className="text-[10px] text-[hsl(232_20%_65%)]">Click "Log Activity" above to get started!</p>
+              </div>
+            )}
             <div className="space-y-2.5">
-              {recentActivities.map((a, i) => (
+              {liveActivities.map((a, i) => (
                 <div key={i} className="flex items-center gap-3 py-2 border-b border-[hsl(258_20%_93%)] last:border-0">
-                  <div className={cn("w-2 h-2 rounded-full shrink-0", a.dot)} />
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.dot_color }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[hsl(232_45%_16%)] truncate">{a.title}</p>
                     <p className="text-[10px] text-[hsl(232_20%_55%)]">{a.time}</p>
                   </div>
                   <span className="text-[10px] font-medium capitalize text-[hsl(232_20%_60%)] bg-muted px-2 py-0.5 rounded-full">
-                    {a.type}
+                    {a.activity_type}
                   </span>
                 </div>
               ))}

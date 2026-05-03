@@ -1,6 +1,6 @@
 # NeuroMate — Desktop App
 
-NeuroMate Desktop is a high-performance Windows (and cross-platform) native application built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**. It delivers the full NeuroMate experience as a lightweight native binary with a glassmorphic UI, a dual-window architecture (main app + always-on-top floating avatar), and deep OS integration via Tauri plugins.
+NeuroMate Desktop is a high-performance Windows (and cross-platform) native application built with **Tauri v2**, **React 19**, **TypeScript**, and **Tailwind CSS v4**. It delivers the full NeuroMate experience as a lightweight native binary with a glassmorphic UI, a dual-window architecture (main app + always-on-top floating avatar), deep OS integration via Tauri plugins, and a complex backend including AI microservices.
 
 ---
 
@@ -8,13 +8,15 @@ NeuroMate Desktop is a high-performance Windows (and cross-platform) native appl
 
 | Layer          | Technology |
 |----------------|------------|
-| UI Framework   | React 19, TypeScript, Vite 7 |
+| UI Framework   | React 19, TypeScript, Vite |
 | Styling        | Tailwind CSS v4, `tailwindcss-animate` |
 | State          | Zustand |
 | Routing        | React Router DOM v7 |
 | Icons          | Lucide React |
 | Rust Backend   | Tauri v2 (Rust) |
 | Native Plugins | `plugin-notification`, `plugin-shell`, `plugin-opener` |
+| AI Services    | Python (stt, tts, noise cancellation, rvc pipelines) |
+| Database       | PostgreSQL with `pgvector` |
 | OS Target      | Windows (primary), macOS, Linux |
 
 ---
@@ -32,60 +34,51 @@ Both windows are frameless (`decorations: false`) with transparency enabled. The
 
 ---
 
-## File Structure
+## Architecture & File Structure
+
+The project has evolved into a robust multi-component architecture:
 
 ```
 desktop_app/
-├── src/                          # React frontend source
-│   ├── assets/                   # Bundled images and icons
-│   ├── components/
-│   │   ├── avatar/
-│   │   │   └── AvatarCanvas.tsx  # Animated avatar renderer for float window
-│   │   └── layout/
-│   │       ├── AppLayout.tsx     # Root layout wrapper (sidebar + title bar + outlet)
-│   │       ├── Sidebar.tsx       # Collapsible glassmorphic navigation sidebar
-│   │       └── TitleBar.tsx      # Custom frameless window title bar (drag, min/max/close)
-│   ├── hooks/
-│   │   └── useTauri.ts           # Hook wrapping Tauri IPC commands (window control, notifications)
-│   ├── lib/
-│   │   └── utils.ts              # Utility helpers (cn class merger)
-│   ├── pages/
-│   │   ├── Home.tsx              # Dashboard home / welcome screen
-│   │   ├── Dashboard.tsx         # Productivity metrics & stats
-│   │   ├── Productivity.tsx      # Task tracker & focus timer
-│   │   ├── KillSwitch.tsx        # Site/app distraction blocker
-│   │   ├── Community.tsx         # Community feed
-│   │   ├── Settings.tsx          # App settings panel
-│   │   └── AvatarFloat.tsx       # Avatar float window entry page
-│   ├── store/
-│   │   └── useAppStore.ts        # Zustand global state (theme, user, avatar, settings)
-│   ├── App.tsx                   # React Router routes definition
-│   ├── main.tsx                  # React entry point (mounts to #root)
-│   ├── index.css                 # Global Tailwind + custom glassmorphic design tokens
-│   └── vite-env.d.ts             # Vite environment type declarations
+├── desktop/                      # The main application bundle
+│   ├── frontend/                 # React frontend source (formerly src/)
+│   │   ├── src/                  
+│   │   │   ├── components/       # UI components (avatar, community, layout, etc.)
+│   │   │   ├── pages/            # App routes (Home, Dashboard, Community, etc.)
+│   │   │   ├── store/            # Zustand global state 
+│   │   │   └── ...               
+│   │   ├── package.json          
+│   │   └── vite.config.ts        
+│   └── backend/                  # Rust / Tauri backend (formerly src-tauri/)
+│       ├── src/                  # Tauri app setup, command registration, plugin init
+│       ├── tauri.conf.json       # Tauri configuration (windows, bundle, security)
+│       └── Cargo.toml            
 │
-├── src-tauri/                    # Rust / Tauri backend
-│   ├── src/
-│   │   └── main.rs               # Tauri app setup, command registration, plugin init
-│   ├── capabilities/
-│   │   └── default.json          # Tauri capability permissions (IPC allowlist)
-│   ├── icons/                    # App icons for all platforms (PNG, ICO, ICNS)
-│   ├── gen/                      # Auto-generated Tauri bindings (do not edit)
-│   ├── tauri.conf.json           # Tauri configuration (windows, bundle, security)
-│   ├── Cargo.toml                # Rust dependencies
-│   ├── Cargo.lock
-│   └── build.rs                  # Tauri build script
+├── client/                       # Python AI client services
+│   ├── client.py                 # Core AI service client 
+│   ├── noise_cancel.py           # Noise cancellation processing
+│   ├── stt_server.py             # Speech-to-Text inference server
+│   └── tortoise_api.py           # Text-to-Speech API integration
 │
-├── public/                       # Static assets served at root
-├── dist/                         # Vite build output (generated, do not commit)
-├── .vscode/                      # VS Code workspace settings & extensions
-├── index.html                    # Vite HTML entry
-├── vite.config.ts                # Vite + Tauri plugin config
-├── tsconfig.json                 # TypeScript root config
-├── tsconfig.node.json            # TypeScript config for Vite/Node tooling
-├── package.json                  # npm dependencies & scripts
-├── package-lock.json
-└── .gitignore
+├── server/                       # Rust-based networking / backend server
+│   ├── src/                      
+│   └── Cargo.toml                
+│
+├── database/                     # Database schemas and initialization
+│   ├── init.sql                  # Initial schema setup
+│   ├── migrations.sql            # Ongoing database migrations
+│   └── pgvector/                 # Vector DB extensions
+│
+├── middleware/                   # Rust middleware layer
+│   ├── src/                      
+│   └── Cargo.toml                
+│
+├── src/                          # Audio / RVC TTS pipelines
+│   ├── rvc/                      # Retrieval-based Voice Conversion 
+│   └── rvc-tts-pipe/             
+│
+├── streamingassetts/             # Media and streaming assets
+└── README.md                     # This file
 ```
 
 ---
@@ -95,42 +88,75 @@ desktop_app/
 ### Prerequisites
 - [Node.js 18+](https://nodejs.org/)
 - [Rust & Cargo](https://rustup.rs/) (stable toolchain)
+- [Python 3.10+](https://www.python.org/) for AI client microservices
+- [PostgreSQL](https://www.postgresql.org/) (Remote instance connected via Tailscale, or local config)
 - [Tauri CLI prerequisites for Windows](https://tauri.app/start/prerequisites/) (WebView2, build tools)
 
 ### Install Dependencies
 
+Install the root dependencies (for concurrent startup scripts):
 ```bash
 cd desktop_app
 npm install
 ```
 
-### Run in Development
-
+Install the frontend dependencies:
 ```bash
-npm run tauri dev
+cd desktop/frontend
+npm install
 ```
 
-This starts the Vite dev server and opens the native Tauri window simultaneously with hot-module replacement.
+Install Python requirements for the client services:
+```bash
+cd ../client
+pip install -r requirements.txt
+```
+
+### Run in Development
+
+Launch the frontend and Tauri backend concurrently from the root directory:
+
+```bash
+cd desktop_app
+npm start
+```
+
+Alternatively, you can run them in separate terminals:
+
+**Terminal 1 (Frontend):**
+```bash
+cd desktop_app/desktop/frontend
+npm run dev
+```
+
+**Terminal 2 (Backend):**
+```bash
+cd desktop_app/desktop/backend
+npx @tauri-apps/cli dev
+```
+
+*(Note: Ensure your Python services and Rust server components are running in separate terminal instances if you are testing features requiring full backend parity like TTS, STT, or Vector database interactions.)*
 
 ### Build for Production
 
 ```bash
+cd desktop_app/desktop/frontend
 npm run tauri build
 ```
 
-Produces a signed `.exe` installer and `.msi` bundle in `src-tauri/target/release/bundle/`.
+Produces a signed `.exe` installer and `.msi` bundle in `desktop/backend/target/release/bundle/`.
 
 ---
 
-## Key Features (Desktop App)
+## Key Features & Progress
 
 - 🪟 **Custom Frameless Window** — Glassmorphic chrome with drag-to-move title bar
 - 👾 **Floating Avatar** — Always-on-top transparent overlay with animated AI avatar
-- 🗂️ **Collapsible Sidebar** — Icon-only or full-label navigation
-- 📊 **Dashboard** — Personal productivity overview and streaks
-- ⏱️ **Productivity** — Focus mode, timers, task management
-- 🚫 **Kill Switch** — Native OS-level site/app blocker
-- 🏘️ **Community** — Community feed inside the desktop shell
-- ⚙️ **Settings** — Theme, avatar, notification, and account config
-- 🔔 **Native Notifications** — OS toast notifications via Tauri plugin
-- 🌐 **Shell Integration** — Open external links natively via Tauri shell plugin
+- 💬 **Persistent Chat Sessions** — DB-backed chat session management with historical searching, titling, and loading
+- 🏘️ **Community Experience** — Rich feed with Reddit-style threads, Q&A tabs, upvoting, custom reposts, and live trending topics
+- 🏆 **Community Challenges** — Real-time DB-backed habit challenges with dynamic join mechanisms
+- 📊 **Dashboard** — Personal productivity overview, activity logging, and streak tracking
+- ⏱️ **Productivity & Kill Switch** — Focus mode, timers, task management, and native OS-level site/app blocker
+- 📡 **Robust Connectivity** — Automated Tailscale bridging to remote PostgreSQL, connection pool initialization, and UI telemetry updates
+- 🗣️ **AI Audio Pipeline** — Custom STT server, Tortoise API TTS, RVC pipeline integrations, and advanced noise cancellation
+- ⚙️ **Settings & System Integration** — Theme config, OS toast notifications, and native external link handling

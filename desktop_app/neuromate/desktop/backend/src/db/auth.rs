@@ -1,7 +1,7 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
 
-#[derive(Clone, serde::Serialize)]
+#[derive(serde::Serialize, FromRow)]
 pub struct DbUser {
     pub id: Uuid,
     pub username: String,
@@ -23,4 +23,15 @@ pub async fn ensure_table(pool: &PgPool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn get_user_by_id(pool: &PgPool, user_id: Uuid) -> Result<Option<DbUser>, sqlx::Error> {
+    let row = sqlx::query_as::<_, DbUser>(
+        "SELECT id, username, display_name, avatar_seed FROM app_users WHERE id = $1"
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
 }

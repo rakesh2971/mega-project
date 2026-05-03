@@ -1,4 +1,31 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, FromRow, Row};
+use uuid::Uuid;
+use chrono::{DateTime, Utc};
+
+#[derive(serde::Serialize, FromRow)]
+pub struct CommunityPost {
+    pub id: Uuid,
+    pub author_id: Uuid,
+    pub author_name: String,
+    pub author_avatar: Option<String>,
+    pub content: String,
+    pub mood: String,
+    pub mood_emoji: String,
+    pub image_url: Option<String>,
+    pub likes: i32,
+    pub comments: i32,
+    pub is_helpful: bool,
+    pub productivity_score: Option<i32>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(serde::Serialize, FromRow)]
+pub struct TrendingTopic {
+    pub id: Uuid,
+    pub tag: String,
+    pub volume: i32,
+    pub description: Option<String>,
+}
 
 pub async fn ensure_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query(
@@ -33,4 +60,53 @@ pub async fn ensure_tables(pool: &PgPool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn get_feed(pool: &PgPool) -> Result<Vec<CommunityPost>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, CommunityPost>(
+        r#"
+        SELECT 
+            p.id, p.author_id, u.display_name as author_name, u.avatar_seed as author_avatar,
+            p.content, p.mood, p.mood_emoji, p.image_url, p.likes, p.comments, 
+            p.is_helpful, p.productivity_score, p.created_at
+        FROM community_posts p
+        JOIN app_users u ON p.author_id = u.id
+        ORDER BY p.created_at DESC
+        LIMIT 50
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}
+
+pub async fn create_post(pool: &PgPool, author_id: Uuid, content: &str, mood: &str, mood_emoji: &str, image_url: Option<&str>, productivity_score: Option<i32>) -> Result<Uuid, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        INSERT INTO community_posts (author_id, content, mood, mood_emoji, image_url, productivity_score)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
+        "#
+    )
+    .bind(author_id)
+    .bind(content)
+    .bind(mood)
+    .bind(mood_emoji)
+    .bind(image_url)
+    .bind(productivity_score)
+    .fetch_one(pool)
+    .await?;
+    
+    Ok(row.try_get("id")?)
+}
+
+pub async fn get_trending_topics(pool: &PgPool) -> Result<Vec<TrendingTopic>, sqlx::Error> {
+    let rows = sqlx::query_as::<_, TrendingTopic>(
+        "SELECT id, tag, volume, description FROM trending_topics ORDER BY volume DESC LIMIT 10"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
 }

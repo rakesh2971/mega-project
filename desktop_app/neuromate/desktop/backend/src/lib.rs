@@ -35,10 +35,21 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // window
             commands::window::greet,
             commands::window::show_avatar_float,
             commands::window::show_main_window,
-            commands::window::trigger_kill_switch
+            commands::window::trigger_kill_switch,
+            // auth
+            commands::auth::get_current_user,
+            commands::auth::login_user,
+            // community
+            commands::community::get_community_feed,
+            commands::community::get_trending_topics,
+            commands::community::repost,
+            // ai
+            commands::ai::generate_post_insight,
+            commands::ai::get_mood,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

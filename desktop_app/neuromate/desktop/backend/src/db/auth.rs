@@ -1,7 +1,7 @@
 use sqlx::{PgPool, FromRow};
 use uuid::Uuid;
 
-#[derive(serde::Serialize, FromRow)]
+#[derive(serde::Serialize, FromRow, Clone)]
 pub struct DbUser {
     pub id: Uuid,
     pub username: String,

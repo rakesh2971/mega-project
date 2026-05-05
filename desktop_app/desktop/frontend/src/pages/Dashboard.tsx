@@ -11,74 +11,45 @@ import {
 import { cn } from "@/lib/cn";
 import AddActivityDialog from "@/components/AddActivityDialog";
 
-// ── Colour tokens (matches index.css palette) ─────────────────────────────
+// ── Color tokens (matches index.css palette) ──────────────────────────────
 const PURPLE     = "hsl(258 100% 65%)";
 const PURPLE_LIGHT = "hsl(258 100% 83%)";
 const CYAN       = "hsl(181 84% 45%)";
 const CYAN_LIGHT = "hsl(181 84% 66%)";
 
-// ── Mock data ─────────────────────────────────────────────────────────────
-const taskData = [
-  { day: "Mon", completed: 8, pending: 2 },
-  { day: "Tue", completed: 6, pending: 4 },
-  { day: "Wed", completed: 9, pending: 1 },
-  { day: "Thu", completed: 7, pending: 3 },
-  { day: "Fri", completed: 10, pending: 2 },
-  { day: "Sat", completed: 5, pending: 1 },
-  { day: "Sun", completed: 4, pending: 2 },
-];
+// ── Dynamic Data Interfaces ───────────────────────────────────────────────
+export interface ProductivityDay {
+  day: string;
+  completed: number;
+  pending: number;
+  score: number;
+}
 
-const moodData = [
-  { day: "Mon", mood: 7 },
-  { day: "Tue", mood: 6 },
-  { day: "Wed", mood: 8 },
-  { day: "Thu", mood: 5 },
-  { day: "Fri", mood: 9 },
-  { day: "Sat", mood: 8 },
-  { day: "Sun", mood: 7 },
-];
+export interface MoodDay {
+  day: string;
+  mood: number;
+}
 
-const pieData = [
-  { name: "Study",    value: 35, color: PURPLE_LIGHT },
-  { name: "Coding",   value: 30, color: PURPLE },
-  { name: "Fitness",  value: 20, color: CYAN_LIGHT },
-  { name: "Personal", value: 15, color: CYAN },
-];
+export interface WorkCategory {
+  name: string;
+  value: number;
+  color: string;
+}
 
-const aiInsights = [
-  {
-    emoji: "💡",
-    label: "Peak Performance",
-    text: "Your productivity is 40% higher in the morning. Try scheduling complex tasks before noon.",
-    color: "border-l-[hsl(258_100%_65%)] bg-[hsl(258_100%_65%_/_0.05)]",
-  },
-  {
-    emoji: "😌",
-    label: "Wellbeing Tip",
-    text: "Your mood dips on Thursdays. Consider scheduling lighter tasks or breaks mid-week.",
-    color: "border-l-[hsl(181_84%_45%)] bg-[hsl(181_84%_45%_/_0.05)]",
-  },
-  {
-    emoji: "🎯",
-    label: "Consistency Win",
-    text: "You've maintained a 7-day streak! Keep this momentum to build lasting habits.",
-    color: "border-l-pink-400 bg-pink-50",
-  },
-  {
-    emoji: "📊",
-    label: "Tomorrow's Forecast",
-    text: "Based on patterns, tomorrow's productivity score: 85. Great conditions for important work!",
-    color: "border-l-blue-400 bg-blue-50",
-  },
-];
+export interface Insight {
+  emoji: string;
+  label: string;
+  text: string;
+  color: string;
+}
 
-const recentActivities = [
-  { type: "task",      title: "Completed math assignment",      time: "2 hours ago",   dot: "bg-green-500" },
-  { type: "focus",     title: "Focus session — Deep Work",      time: "4 hours ago",   dot: "bg-blue-500" },
-  { type: "mood",      title: "Mood check-in recorded",         time: "5 hours ago",   dot: "bg-pink-500" },
-  { type: "journal",   title: "Journal entry written",          time: "Yesterday 9pm", dot: "bg-purple-500" },
-  { type: "routine",   title: "Morning routine completed",      time: "Yesterday 8am", dot: "bg-orange-500" },
-];
+export interface HabitMetrics {
+  task_streak: number;
+  weekly_consistency: number;
+  focus_sessions_week: number;
+  wellness_score: number;
+  dynamic_insights: Insight[];
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
@@ -366,31 +337,46 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [liveActivities, setLiveActivities] = useState<ActivityItem[]>([]);
   const [heatmapData, setHeatmapData] = useState<HeatmapDay[] | undefined>(undefined);
+  
+  const [taskData, setTaskData] = useState<ProductivityDay[]>([]);
+  const [moodData, setMoodData] = useState<MoodDay[]>([]);
+  const [pieData, setPieData] = useState<WorkCategory[]>([]);
+  const [habitMetrics, setHabitMetrics] = useState<HabitMetrics | null>(null);
+  
   const [loadingStats, setLoadingStats] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const [s, acts, heat] = await Promise.all([
+      const rangeDays = activeRange === "90D" ? 90 : activeRange === "30D" ? 30 : 7;
+      const [s, acts, heat, prod, mood, work, metrics] = await Promise.all([
         invoke<DashboardStats>("get_dashboard_stats", { userId: DUMMY_USER_ID }),
         invoke<ActivityItem[]>("get_recent_activities", { userId: DUMMY_USER_ID, limit: 10 }),
         invoke<HeatmapDay[]>("get_heatmap", { userId: DUMMY_USER_ID, year: new Date().getFullYear() }),
+        invoke<ProductivityDay[]>("get_productivity_analytics", { userId: DUMMY_USER_ID, rangeDays }),
+        invoke<MoodDay[]>("get_mood_analytics", { userId: DUMMY_USER_ID, rangeDays }),
+        invoke<WorkCategory[]>("get_work_distribution", { userId: DUMMY_USER_ID }),
+        invoke<HabitMetrics>("get_habit_metrics", { userId: DUMMY_USER_ID }),
       ]);
       setStats(s);
       setLiveActivities(acts);
       setHeatmapData(heat);
+      setTaskData(prod);
+      setMoodData(mood);
+      setPieData(work);
+      setHabitMetrics(metrics);
     } catch (e) {
       console.error("Dashboard data fetch failed:", e);
     } finally {
       setLoadingStats(false);
     }
-  }, []);
+  }, [activeRange]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const moodEmoji = (level: number | null) => {
     if (!level) return "😐";
-    return ["😢", "😕", "😐", "😊", "😄"][level - 1] ?? "😐";
+    return ["😢", "😕", "😐", "😊", "😄"][Math.round(level) - 1] ?? "😐";
   };
   const focusDisplay = stats ? (() => {
     const h = Math.floor(stats.focus_minutes_today / 60);
@@ -401,17 +387,22 @@ export default function Dashboard() {
   const snapshots = [
     { icon: CheckCircle2, label: "Tasks Today",     value: stats ? `${stats.tasks_today}/${stats.tasks_total_today}` : "0/0",   sub: stats ? `${stats.tasks_total_today > 0 ? Math.round((stats.tasks_today / stats.tasks_total_today) * 100) : 0}% completed` : "Log a task",     accentColor: "#22c55e" },
     { icon: Heart,        label: "Mood Status",     value: moodEmoji(stats?.latest_mood_level ?? null),     sub: stats?.latest_mood_type?.replace("_", " ") ?? "No check-in yet",   accentColor: "#f472b6" },
-    { icon: Brain,        label: "Productivity",    value: stats ? `${Math.min(100, stats.tasks_today * 10 + stats.focus_minutes_today)}` : "—",     sub: "Calculated score",     accentColor: PURPLE },
+    { icon: Brain,        label: "Productivity",    value: stats ? `${Math.min(100, stats.tasks_today * 10 + Math.floor(stats.focus_minutes_today / 60) * 20)}` : "—",     sub: "Calculated score",     accentColor: PURPLE },
     { icon: Clock,        label: "Focus Time",      value: focusDisplay, sub: "Today's sessions",  accentColor: "#fb923c" },
     { icon: Flame,        label: "Current Streak",  value: stats ? `${stats.streak_days} day${stats.streak_days !== 1 ? "s" : ""}` : "0 days", sub: stats && stats.streak_days > 0 ? "Keep it up!" : "Log to start streak",       accentColor: "#ef4444" },
   ];
 
   const habits = [
-    { icon: Flame,       label: "Task Streak",         badge: "7 days", value: 70, color: "#fb923c" },
-    { icon: CheckCircle2,label: "Weekly Consistency",  badge: "85%",    value: 85, color: "#22c55e" },
-    { icon: Brain,       label: "Focus Sessions",      badge: "24 this week", value: 60, color: PURPLE },
-    { icon: Zap,         label: "Wellness Score",      badge: "92/100", value: 92, color: CYAN },
+    { icon: Flame,       label: "Task Streak",         badge: habitMetrics ? `${habitMetrics.task_streak} days` : "0 days", value: habitMetrics ? Math.min(100, habitMetrics.task_streak * 10) : 0, color: "#fb923c" },
+    { icon: CheckCircle2,label: "Weekly Consistency",  badge: habitMetrics ? `${habitMetrics.weekly_consistency}%` : "0%",    value: habitMetrics?.weekly_consistency ?? 0, color: "#22c55e" },
+    { icon: Brain,       label: "Focus Sessions",      badge: habitMetrics ? `${habitMetrics.focus_sessions_week} this week` : "0 this week", value: habitMetrics ? Math.min(100, habitMetrics.focus_sessions_week * 5) : 0, color: PURPLE },
+    { icon: Zap,         label: "Wellness Score",      badge: habitMetrics ? `${habitMetrics.wellness_score}/100` : "0/100", value: habitMetrics?.wellness_score ?? 0, color: CYAN },
   ];
+
+  // Helper variables for chart summaries
+  const avgCompletionRate = taskData.length > 0 ? Math.round(taskData.reduce((acc, curr) => acc + (curr.completed + curr.pending > 0 ? curr.completed / (curr.completed + curr.pending) : 0), 0) / taskData.length * 100) : 0;
+  const filteredMoods = moodData.filter(d => d.mood > 0);
+  const avgMoodValue = filteredMoods.length > 0 ? (filteredMoods.reduce((acc, curr) => acc + curr.mood, 0) / filteredMoods.length) : 0;
 
   return (
     <div className="h-full overflow-y-auto smooth-scroll">
@@ -449,7 +440,7 @@ export default function Dashboard() {
             {/* Productivity Bar Chart */}
             <ChartCard
               title="Productivity Analytics"
-              subtitle="Task completion this week"
+              subtitle="Task completion trends"
               range
               activeRange={activeRange}
               onRangeChange={setActiveRange}
@@ -466,17 +457,17 @@ export default function Dashboard() {
               </ResponsiveContainer>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-[hsl(232_20%_55%)]">Weekly Completion Rate</span>
-                  <span className="font-semibold text-[hsl(232_45%_16%)]">78%</span>
+                  <span className="text-[hsl(232_20%_55%)]">Avg Completion Rate</span>
+                  <span className="font-semibold text-[hsl(232_45%_16%)]">{avgCompletionRate}%</span>
                 </div>
-                <ProgressBar value={78} color={`linear-gradient(90deg, ${PURPLE_LIGHT}, ${CYAN_LIGHT})`} />
+                <ProgressBar value={avgCompletionRate} color={`linear-gradient(90deg, ${PURPLE_LIGHT}, ${CYAN_LIGHT})`} />
               </div>
             </ChartCard>
 
             {/* Mood Line Chart */}
             <ChartCard
               title="Mood & Wellbeing"
-              subtitle="Emotional patterns this week"
+              subtitle="Emotional patterns over time"
               range
               activeRange={activeRange}
               onRangeChange={setActiveRange}
@@ -485,7 +476,7 @@ export default function Dashboard() {
                 <LineChart data={moodData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(258 20% 92%)" />
                   <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(232 20% 55%)" }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "hsl(232 20% 55%)" }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "hsl(232 20% 55%)" }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line
                     type="monotone"
@@ -501,11 +492,11 @@ export default function Dashboard() {
               <div className="mt-3 flex gap-4 text-[11px]">
                 <div>
                   <p className="text-[hsl(232_20%_55%)]">Avg Mood</p>
-                  <p className="font-bold text-[hsl(232_45%_16%)] text-base">7.1/10</p>
+                  <p className="font-bold text-[hsl(232_45%_16%)] text-base">{avgMoodValue.toFixed(1)}/5</p>
                 </div>
                 <div>
                   <p className="text-[hsl(232_20%_55%)]">Most Common</p>
-                  <p className="text-xl">😊</p>
+                  <p className="text-xl">{moodEmoji(avgMoodValue)}</p>
                 </div>
               </div>
             </ChartCard>
@@ -575,15 +566,19 @@ export default function Dashboard() {
           <div className="glass-card rounded-2xl p-4 flex flex-col">
             <SectionHeader icon={Sparkles} title="AI Insights" />
             <div className="flex-1 space-y-2 mt-1">
-              {aiInsights.map((insight, i) => (
-                <div key={i} className={cn("p-2.5 rounded-lg border-l-2 text-xs", insight.color)}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-sm">{insight.emoji}</span>
-                    <span className="font-semibold text-[hsl(232_45%_16%)]">{insight.label}</span>
+              {!habitMetrics?.dynamic_insights?.length ? (
+                <p className="text-xs text-[hsl(232_20%_55%)] mt-4">Loading insights...</p>
+              ) : (
+                habitMetrics.dynamic_insights.map((insight, i) => (
+                  <div key={i} className={cn("p-2.5 rounded-lg border-l-2 text-xs", insight.color)}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-sm">{insight.emoji}</span>
+                      <span className="font-semibold text-[hsl(232_45%_16%)]">{insight.label}</span>
+                    </div>
+                    <p className="text-[10px] text-[hsl(232_20%_55%)] leading-relaxed">{insight.text}</p>
                   </div>
-                  <p className="text-[10px] text-[hsl(232_20%_55%)] leading-relaxed">{insight.text}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -609,7 +604,7 @@ export default function Dashboard() {
                 <div key={i} className="flex items-center gap-3 py-2 border-b border-[hsl(258_20%_93%)] last:border-0">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: a.dot_color }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[hsl(232_45%_16%)] truncate">{a.title}</p>
+                     <p className="text-xs font-medium text-[hsl(232_45%_16%)] truncate">{a.title}</p>
                     <p className="text-[10px] text-[hsl(232_20%_55%)]">{a.time}</p>
                   </div>
                   <span className="text-[10px] font-medium capitalize text-[hsl(232_20%_60%)] bg-muted px-2 py-0.5 rounded-full">

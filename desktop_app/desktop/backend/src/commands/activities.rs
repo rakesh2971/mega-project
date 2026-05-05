@@ -315,3 +315,49 @@ pub async fn get_dashboard_stats(
         .await
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn get_productivity_analytics(
+    db_state: State<'_, DbState>,
+    user_id: Option<String>,
+    range_days: Option<i32>,
+) -> Result<Vec<db::activities::ProductivityDay>, String> {
+    let uid = user_uuid(user_id)?;
+    db::activities::get_productivity_analytics(&db_state.0, uid, range_days.unwrap_or(7))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_mood_analytics(
+    db_state: State<'_, DbState>,
+    user_id: Option<String>,
+    range_days: Option<i32>,
+) -> Result<Vec<db::activities::MoodDay>, String> {
+    let uid = user_uuid(user_id)?;
+    db::activities::get_mood_analytics(&db_state.0, uid, range_days.unwrap_or(7))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_work_distribution(
+    db_state: State<'_, DbState>,
+    user_id: Option<String>,
+) -> Result<Vec<db::activities::WorkCategory>, String> {
+    let uid = user_uuid(user_id)?;
+    db::activities::get_work_distribution(&db_state.0, uid)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_habit_metrics(
+    db_state: State<'_, DbState>,
+    user_id: Option<String>,
+) -> Result<db::activities::HabitMetrics, String> {
+    let uid = user_uuid(user_id)?;
+    db::activities::get_habit_metrics(&db_state.0, uid)
+        .await
+        .map_err(|e| e.to_string())
+}

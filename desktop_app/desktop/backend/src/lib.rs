@@ -94,6 +94,10 @@ pub fn run() {
             commands::activities::get_recent_activities,
             commands::activities::get_heatmap,
             commands::activities::get_dashboard_stats,
+            commands::activities::get_productivity_analytics,
+            commands::activities::get_mood_analytics,
+            commands::activities::get_work_distribution,
+            commands::activities::get_habit_metrics,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

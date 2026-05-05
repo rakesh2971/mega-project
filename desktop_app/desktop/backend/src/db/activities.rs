@@ -624,3 +624,330 @@ fn format_time(dt: DateTime<Utc>) -> String {
     if days < 7 { return format!("{} days ago", days); }
     local.format("%b %d").to_string()
 }
+
+// ── Dashboard Advanced Analytics ──────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct ProductivityDay {
+    pub day: String,
+    pub completed: i64,
+    pub pending: i64,
+    pub score: f64,
+}
+
+pub async fn get_productivity_analytics(pool: &PgPool, user_id: Uuid, range_days: i32) -> Result<Vec<ProductivityDay>, sqlx::Error> {
+    let query = r#"
+        WITH dates AS (
+            SELECT generate_series(CURRENT_DATE - ($2 - 1) * INTERVAL '1 day', CURRENT_DATE, '1 day')::date AS d
+        ),
+        daily_tasks AS (
+            SELECT 
+                d.d as day_date,
+                COUNT(t.id) FILTER (WHERE t.completed = TRUE AND DATE(COALESCE(t.completed_at, t.created_at)) = d.d) as completed_tasks,
+                COUNT(t.id) FILTER (WHERE t.completed = FALSE AND DATE(t.created_at) = d.d) as pending_tasks,
+                COUNT(t.id) FILTER (WHERE DATE(COALESCE(t.completed_at, t.created_at)) = d.d) as total_tasks
+            FROM dates d
+            LEFT JOIN nm_tasks t ON t.user_id = $1 AND DATE(COALESCE(t.completed_at, t.created_at)) = d.d
+            GROUP BY d.d
+        ),
+        daily_moods AS (
+            SELECT DATE(created_at) as day_date, AVG(mood_level) as avg_mood
+            FROM nm_moods
+            WHERE user_id = $1 AND created_at >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+            GROUP BY DATE(created_at)
+        ),
+        daily_focus AS (
+            SELECT DATE(started_at) as day_date, SUM(duration_minutes) as focus_minutes
+            FROM nm_focus_sessions
+            WHERE user_id = $1 AND started_at >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+            GROUP BY DATE(started_at)
+        )
+        SELECT 
+            to_char(dt.day_date, 'Dy') as day_name,
+            COALESCE(dt.completed_tasks, 0) as completed,
+            COALESCE(dt.pending_tasks, 0) as pending,
+            COALESCE(dt.total_tasks, 0) as total,
+            COALESCE(dm.avg_mood, 0) as avg_mood,
+            COALESCE(df.focus_minutes, 0) as focus_minutes
+        FROM daily_tasks dt
+        LEFT JOIN daily_moods dm ON dt.day_date = dm.day_date
+        LEFT JOIN daily_focus df ON dt.day_date = df.day_date
+        ORDER BY dt.day_date ASC
+    "#;
+
+    let rows: Vec<(String, i64, i64, i64, f64, i64)> = sqlx::query_as(query)
+        .bind(user_id)
+        .bind(range_days)
+        .fetch_all(pool)
+        .await?;
+
+    let mut result = Vec::new();
+    for (day, completed, pending, total, avg_mood, focus_minutes) in rows {
+        let base_score = if total > 0 { (completed as f64 / total as f64) * 50.0 } else { 0.0 };
+        let mood_multiplier = if avg_mood > 0.0 { (avg_mood / 5.0) * 30.0 } else { 0.0 };
+        let focus_bonus = ((focus_minutes as f64 / 480.0) * 20.0).min(20.0);
+        let score = (base_score + mood_multiplier + focus_bonus).clamp(0.0, 100.0);
+
+        result.push(ProductivityDay {
+            day,
+            completed,
+            pending,
+            score,
+        });
+    }
+
+    Ok(result)
+}
+
+#[derive(serde::Serialize)]
+pub struct MoodDay {
+    pub day: String,
+    pub mood: f64,
+}
+
+pub async fn get_mood_analytics(pool: &PgPool, user_id: Uuid, range_days: i32) -> Result<Vec<MoodDay>, sqlx::Error> {
+    let query = r#"
+        WITH dates AS (
+            SELECT generate_series(CURRENT_DATE - ($2 - 1) * INTERVAL '1 day', CURRENT_DATE, '1 day')::date AS d
+        )
+        SELECT 
+            to_char(d.d, 'Dy') as day_name,
+            COALESCE(AVG(m.mood_level), 0) as mood
+        FROM dates d
+        LEFT JOIN nm_moods m ON m.user_id = $1 AND DATE(m.created_at) = d.d
+        GROUP BY d.d
+        ORDER BY d.d ASC
+    "#;
+
+    let rows: Vec<(String, f64)> = sqlx::query_as(query)
+        .bind(user_id)
+        .bind(range_days)
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows.into_iter().map(|(day, mood)| MoodDay { day, mood }).collect())
+}
+
+#[derive(serde::Serialize)]
+pub struct WorkCategory {
+    pub name: String,
+    pub value: i64,
+    pub color: String,
+}
+
+pub async fn get_work_distribution(pool: &PgPool, user_id: Uuid) -> Result<Vec<WorkCategory>, sqlx::Error> {
+    let query = r#"
+        SELECT activity as name, SUM(duration_minutes)::bigint as value
+        FROM nm_focus_sessions
+        WHERE user_id = $1 AND started_at >= CURRENT_DATE - INTERVAL '7 days'
+        GROUP BY activity
+        ORDER BY value DESC
+        LIMIT 5
+    "#;
+
+    let rows: Vec<(String, i64)> = sqlx::query_as(query)
+        .bind(user_id)
+        .fetch_all(pool)
+        .await?;
+
+    let colors = vec![
+        "hsl(258 100% 83%)", // PURPLE_LIGHT
+        "hsl(258 100% 65%)", // PURPLE
+        "hsl(181 84% 66%)",  // CYAN_LIGHT
+        "hsl(181 84% 45%)",  // CYAN
+        "#f472b6",           // PINK
+    ];
+
+    let mut result = Vec::new();
+    for (i, (name, value)) in rows.into_iter().enumerate() {
+        let color = colors.get(i % colors.len()).unwrap_or(&"#94a3b8").to_string();
+        result.push(WorkCategory { name, value, color });
+    }
+
+    Ok(result)
+}
+
+#[derive(serde::Serialize)]
+pub struct Insight {
+    pub emoji: String,
+    pub label: String,
+    pub text: String,
+    pub color: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct HabitMetrics {
+    pub task_streak: i64,
+    pub weekly_consistency: i64,
+    pub focus_sessions_week: i64,
+    pub wellness_score: i64,
+    pub dynamic_insights: Vec<Insight>,
+}
+
+pub async fn get_habit_metrics(pool: &PgPool, user_id: Uuid) -> Result<HabitMetrics, sqlx::Error> {
+    let streak: i64 = sqlx::query_scalar(
+        r#"
+        WITH active_days AS (
+            SELECT DISTINCT DATE(ts) as day FROM (
+                SELECT completed_at as ts FROM nm_tasks WHERE user_id = $1 AND completed = TRUE
+                UNION ALL SELECT created_at FROM nm_moods WHERE user_id = $1
+                UNION ALL SELECT started_at FROM nm_focus_sessions WHERE user_id = $1
+                UNION ALL SELECT created_at FROM nm_journals WHERE user_id = $1
+                UNION ALL SELECT completed_at FROM nm_routines WHERE user_id = $1 AND completed = TRUE
+                UNION ALL SELECT started_at FROM nm_meditations WHERE user_id = $1
+            ) sub
+        ),
+        numbered AS (
+            SELECT day, ROW_NUMBER() OVER (ORDER BY day DESC) as rn FROM active_days
+        )
+        SELECT COUNT(*) FROM numbered
+        WHERE (CURRENT_DATE - day) = (rn - 1)
+        "#
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0);
+
+    let active_days_last_7: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(DISTINCT DATE(ts)) FROM (
+            SELECT completed_at as ts FROM nm_tasks WHERE user_id = $1 AND completed = TRUE
+            UNION ALL SELECT created_at FROM nm_moods WHERE user_id = $1
+            UNION ALL SELECT started_at FROM nm_focus_sessions WHERE user_id = $1
+            UNION ALL SELECT created_at FROM nm_journals WHERE user_id = $1
+            UNION ALL SELECT completed_at FROM nm_routines WHERE user_id = $1 AND completed = TRUE
+            UNION ALL SELECT started_at FROM nm_meditations WHERE user_id = $1
+        ) sub
+        WHERE ts >= CURRENT_DATE - INTERVAL '7 days'
+        "#
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0);
+    let weekly_consistency = (active_days_last_7 as f64 / 7.0 * 100.0) as i64;
+
+    let focus_sessions_week: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM nm_focus_sessions WHERE user_id = $1 AND started_at >= CURRENT_DATE - INTERVAL '7 days'"
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0);
+
+    let avg_mood_week: f64 = sqlx::query_scalar(
+        "SELECT COALESCE(AVG(mood_level), 0) FROM nm_moods WHERE user_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days'"
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0.0);
+    
+    let meditation_mins_week: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(duration_minutes), 0)::bigint FROM nm_meditations WHERE user_id = $1 AND started_at >= CURRENT_DATE - INTERVAL '7 days'"
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0);
+
+    let journals_week: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM nm_journals WHERE user_id = $1 AND created_at >= CURRENT_DATE - INTERVAL '7 days'"
+    ).bind(user_id).fetch_one(pool).await.unwrap_or(0);
+
+    let mood_score = (avg_mood_week / 5.0) * 50.0;
+    let med_score = ((meditation_mins_week as f64) / 60.0 * 30.0).min(30.0);
+    let journal_score = ((journals_week as f64) / 3.0 * 20.0).min(20.0);
+    let wellness_score = (mood_score + med_score + journal_score) as i64;
+
+    let mut dynamic_insights = Vec::new();
+
+    let correlation_query = r#"
+        WITH daily_tasks AS (
+            SELECT DATE(COALESCE(completed_at, created_at)) as d, COUNT(*) as c
+            FROM nm_tasks WHERE user_id = $1 AND completed = TRUE
+            GROUP BY DATE(COALESCE(completed_at, created_at))
+        ), daily_moods AS (
+            SELECT DATE(created_at) as d, AVG(mood_level) as m
+            FROM nm_moods WHERE user_id = $1
+            GROUP BY DATE(created_at)
+        )
+        SELECT t.c, m.m
+        FROM daily_tasks t
+        JOIN daily_moods m ON t.d = m.d
+        WHERE t.d >= CURRENT_DATE - INTERVAL '30 days'
+    "#;
+    let corr_rows: Vec<(i64, f64)> = sqlx::query_as(correlation_query).bind(user_id).fetch_all(pool).await.unwrap_or_default();
+
+    if corr_rows.len() > 1 {
+        let n = corr_rows.len() as f64;
+        let mut sum_m = 0.0;
+        let mut sum_c = 0.0;
+        let mut high_mood_prod = Vec::new();
+        let mut low_mood_prod = Vec::new();
+
+        for (c, m) in &corr_rows {
+            sum_c += *c as f64;
+            sum_m += *m;
+            if *m >= 4.0 { high_mood_prod.push(*c as f64); }
+            if *m <= 2.0 { low_mood_prod.push(*c as f64); }
+        }
+        let mean_m = sum_m / n;
+        let mean_c = sum_c / n;
+
+        let mut num = 0.0;
+        let mut den_m = 0.0;
+        let mut den_c = 0.0;
+        for (c, m) in &corr_rows {
+            let c_diff = *c as f64 - mean_c;
+            let m_diff = *m - mean_m;
+            num += c_diff * m_diff;
+            den_c += c_diff * c_diff;
+            den_m += m_diff * m_diff;
+        }
+
+        if den_m > 0.0 && den_c > 0.0 {
+            let correlation = num / (den_m * den_c).sqrt();
+            if correlation > 0.5 {
+                dynamic_insights.push(Insight {
+                    emoji: "📊".into(),
+                    label: "Mood & Productivity".into(),
+                    text: "Strong positive correlation! You tend to complete more tasks when you're in a good mood.".into(),
+                    color: "border-l-blue-400 bg-blue-50".into(),
+                });
+            }
+        }
+
+        let avg_high = if !high_mood_prod.is_empty() { high_mood_prod.iter().sum::<f64>() / high_mood_prod.len() as f64 } else { 0.0 };
+        let avg_low = if !low_mood_prod.is_empty() { low_mood_prod.iter().sum::<f64>() / low_mood_prod.len() as f64 } else { 0.0 };
+
+        if avg_high > avg_low + 2.0 {
+            dynamic_insights.push(Insight {
+                emoji: "💡".into(),
+                label: "Peak Performance".into(),
+                text: "Your productivity is significantly higher on high-mood days. Prioritize activities that make you happy!".into(),
+                color: "border-l-[hsl(258_100%_65%)] bg-[hsl(258_100%_65%_/_0.05)]".into(),
+            });
+        }
+    }
+
+    if streak >= 3 {
+        dynamic_insights.push(Insight {
+            emoji: "🎯".into(),
+            label: "Consistency Win".into(),
+            text: format!("You've maintained a {}-day streak! Keep this momentum to build lasting habits.", streak),
+            color: "border-l-pink-400 bg-pink-50".into(),
+        });
+    }
+
+    let recent_moods: Vec<f64> = sqlx::query_scalar(
+        "SELECT mood_level::float FROM nm_moods WHERE user_id = $1 ORDER BY created_at DESC LIMIT 3"
+    ).bind(user_id).fetch_all(pool).await.unwrap_or_default();
+
+    if recent_moods.len() == 3 && recent_moods.iter().all(|&m| m <= 2.0) {
+        dynamic_insights.push(Insight {
+            emoji: "🫂".into(),
+            label: "Gentle Reminder".into(),
+            text: "I noticed you've been feeling low lately. It's perfectly okay to take a break or reach out to someone you trust.".into(),
+            color: "border-l-orange-400 bg-orange-50".into(),
+        });
+    }
+
+    if dynamic_insights.is_empty() {
+        dynamic_insights.push(Insight {
+            emoji: "✨".into(),
+            label: "Ready to go".into(),
+            text: "Keep logging your tasks and moods to generate personalized AI insights!".into(),
+            color: "border-l-[hsl(181_84%_45%)] bg-[hsl(181_84%_45%_/_0.05)]".into(),
+        });
+    }
+
+    Ok(HabitMetrics {
+        task_streak: streak,
+        weekly_consistency,
+        focus_sessions_week,
+        wellness_score,
+        dynamic_insights,
+    })
+}

@@ -25,3 +25,7 @@ Thumbs.db
 .vscode/settings.json
 *.suo
 *.user
+
+# Additional directories
+desktop_app\modules
+final report.pdf

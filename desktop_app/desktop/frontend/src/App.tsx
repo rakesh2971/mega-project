@@ -8,6 +8,10 @@ import Productivity from "@/pages/Productivity";
 import Dashboard from "@/pages/Dashboard";
 import Settings from "@/pages/Settings";
 import KillSwitch from "@/pages/KillSwitch";
+import Pomodoro from "@/pages/Pomodoro";
+import Breathing from "@/pages/Breathing";
+import Soundscapes from "@/pages/Soundscapes";
+import Cognitive from "@/pages/Cognitive";
 
 // ── App ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +27,10 @@ export default function App() {
           <Route path="/dashboard"   element={<Dashboard />} />
           <Route path="/settings"    element={<Settings />} />
           <Route path="/kill-switch" element={<KillSwitch />} />
+          <Route path="/productivity/pomodoro" element={<Pomodoro />} />
+          <Route path="/productivity/breathing" element={<Breathing />} />
+          <Route path="/productivity/soundscapes" element={<Soundscapes />} />
+          <Route path="/productivity/cognitive" element={<Cognitive />} />
 
 
         </Routes>

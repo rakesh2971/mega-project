@@ -3,6 +3,7 @@ import {
   Wind, Music, Brain, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useNavigate } from "react-router-dom";
 
 // ── Tool card definition ──────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ const TOOLS = [
     tag: "Focus",
     tagColor: "bg-purple-100 text-purple-700",
     gradient: "from-purple-200 to-purple-100",
-    ready: false,
+    ready: true,
   },
   {
     id: "focus-mode",
@@ -65,7 +66,7 @@ const TOOLS = [
     tag: "Wellness",
     tagColor: "bg-teal-100 text-teal-700",
     gradient: "from-teal-200 to-teal-100",
-    ready: false,
+    ready: true,
   },
   {
     id: "soundscapes",
@@ -75,7 +76,7 @@ const TOOLS = [
     tag: "Audio",
     tagColor: "bg-indigo-100 text-indigo-700",
     gradient: "from-indigo-200 to-indigo-100",
-    ready: false,
+    ready: true,
   },
   {
     id: "cognitive",
@@ -85,13 +86,15 @@ const TOOLS = [
     tag: "Training",
     tagColor: "bg-[hsl(258_100%_93%)] text-[hsl(258_100%_50%)]",
     gradient: "from-[hsl(258_100%_93%)] to-[hsl(197_100%_93%)]",
-    ready: false,
+    ready: true,
   },
 ] as const;
 
 // ── Productivity Page ─────────────────────────────────────────────────────
 
 export default function Productivity() {
+  const navigate = useNavigate();
+
   return (
     <div className="h-full overflow-y-auto">
       {/* Header */}
@@ -139,6 +142,17 @@ export default function Productivity() {
             {/* CTA */}
             <button
               id={`btn-open-${id}`}
+              onClick={() => {
+                if (id === 'pomodoro') {
+                  navigate('/productivity/pomodoro');
+                } else if (id === 'breathing') {
+                  navigate('/productivity/breathing');
+                } else if (id === 'soundscapes') {
+                  navigate('/productivity/soundscapes');
+                } else if (id === 'cognitive') {
+                  navigate('/productivity/cognitive');
+                }
+              }}
               className={cn(
                 "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-heading font-semibold",
                 "bg-gradient-hero border border-[hsl(258_20%_90%)]",

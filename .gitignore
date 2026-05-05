@@ -27,5 +27,6 @@ Thumbs.db
 *.user
 
 # Additional directories
-desktop_app\modules
+desktop_app/modules/
 final report.pdf
+.claude

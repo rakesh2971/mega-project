@@ -11,9 +11,10 @@ import ChallengeCard, { Challenge } from "@/components/community/ChallengeCard";
 import QuestionCard, { Question } from "@/components/community/QuestionCard";
 import TrendingTopicCard, { TrendingTopic } from "@/components/community/TrendingTopicCard";
 import CommunityRightSidebar from "@/components/community/CommunityRightSidebar";
+import { useAppStore } from "@/store/useAppStore";
 
-// ── Dummy user for testing ──────────────────────────────────────────────────
-const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
+// ── Fallback user ID (used only if DB is offline and no user logged in) ───
+const FALLBACK_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 const FEED_FILTERS = ["Newest", "Most Helpful", "Most Liked", "Following"] as const;
 
@@ -32,7 +33,7 @@ type TabId = typeof TABS[number]["id"];
 
 // ── Feed Tab ──────────────────────────────────────────────────────────────
 
-function FeedTab() {
+function FeedTab({ userId }: { userId: string }) {
   const [showCreate, setShowCreate] = useState(false);
   const [filter, setFilter] = useState<string>("Newest");
   const [posts, setPosts] = useState<Post[]>([]);
@@ -58,7 +59,7 @@ function FeedTab() {
   const handlePost = async (content: string, mood: string | null) => {
     try {
       await invoke("create_post", {
-        authorId: DUMMY_USER_ID,
+        authorId: userId,
         content,
         mood: mood ?? "motivated",
         moodEmoji: "✨",
@@ -142,13 +143,13 @@ const CHALLENGE_CATS = [
   { id: "health",       label: "Health",      icon: Flame },
 ];
 
-function ChallengesTab() {
+function ChallengesTab({ userId }: { userId: string }) {
   const [cat, setCat] = useState("all");
   const [challenges, setChallenges] = useState<Challenge[]>([]);
 
   const fetchChallenges = async () => {
     try {
-      const data: Challenge[] = await invoke("get_challenges", { userId: DUMMY_USER_ID });
+      const data: Challenge[] = await invoke("get_challenges", { userId });
       setChallenges(data);
     } catch (e) {
       console.error(e);
@@ -381,7 +382,7 @@ function TrendingTab() {
               "px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all",
               activeTag === tag
                 ? "bg-gradient-primary text-[hsl(232_45%_16%)]"
-                : "bg-muted text-[hsl(258_60%_45%)] hover:bg-[hsl(258_100%_65%_/_0.15)] border border-[hsl(258_20%_88%)]"
+                : "bg-muted text-[hsl(258_60%_45%)] hover:bg-[hsl(258_100%_65%/0.15)] border border-[hsl(258_20%_88%)]"
             )}
           >
             {tag}
@@ -404,11 +405,13 @@ function TrendingTab() {
 }
 
 function MyPostsTab({ 
+  userId,
   savedQuestions = [], 
   onUpvoteQuestion, 
   onAnswerSubmitQuestion,
   onBookmarkQuestion
 }: { 
+  userId: string;
   savedQuestions?: Question[];
   onUpvoteQuestion?: (id: number, increment: boolean) => void;
   onAnswerSubmitQuestion?: (id: number, content: string) => void;
@@ -423,8 +426,8 @@ function MyPostsTab({
     try {
       setLoading(true);
       const data: Post[] = await invoke(view === "Authored" ? "get_my_posts" : "get_helpful_posts", {
-        authorId: DUMMY_USER_ID,
-        userId: DUMMY_USER_ID,
+        authorId: userId,
+        userId,
       });
       setPosts(data);
     } catch (e) {
@@ -441,7 +444,7 @@ function MyPostsTab({
   const handlePost = async (content: string, mood: string | null) => {
     try {
       await invoke("create_post", {
-        authorId: DUMMY_USER_ID,
+        authorId: userId,
         content,
         mood: mood ?? "motivated",
         moodEmoji: "✨",
@@ -682,6 +685,8 @@ function SettingsTab() {
 // ── Community Page ────────────────────────────────────────────────────────
 
 export default function Community() {
+  const { user } = useAppStore();
+  const userId = user?.id ?? FALLBACK_USER_ID;
   const [activeTab, setActiveTab] = useState<TabId>("feed");
   const [questions, setQuestions] = useState<Question[]>(MOCK_QUESTIONS);
 
@@ -725,11 +730,11 @@ export default function Community() {
   };
 
   const tabContent: Record<TabId, React.ReactNode> = {
-    feed:       <FeedTab />,
-    challenges: <ChallengesTab />,
+    feed:       <FeedTab userId={userId} />,
+    challenges: <ChallengesTab userId={userId} />,
     qa:         <QATab questions={questions} onUpvote={handleUpvoteQuestion} onAnswerSubmit={handleAnswerSubmitQuestion} onBookmark={handleBookmarkQuestion} />,
     trending:   <TrendingTab />,
-    myposts:    <MyPostsTab savedQuestions={questions.filter((q) => q.isBookmarked)} onUpvoteQuestion={handleUpvoteQuestion} onAnswerSubmitQuestion={handleAnswerSubmitQuestion} onBookmarkQuestion={handleBookmarkQuestion} />,
+    myposts:    <MyPostsTab userId={userId} savedQuestions={questions.filter((q) => q.isBookmarked)} onUpvoteQuestion={handleUpvoteQuestion} onAnswerSubmitQuestion={handleAnswerSubmitQuestion} onBookmarkQuestion={handleBookmarkQuestion} />,
     settings:   <SettingsTab />,
   };
 

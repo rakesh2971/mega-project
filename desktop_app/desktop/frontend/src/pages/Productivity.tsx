@@ -19,6 +19,36 @@ const TOOLS = [
     ready: true,
   },
   {
+    id: "breathing",
+    icon: Wind,
+    title: "Breathing Exercise",
+    description: "Guided box breathing and 4-7-8 techniques for calm",
+    tag: "Wellness",
+    tagColor: "bg-teal-100 text-teal-700",
+    gradient: "from-teal-200 to-teal-100",
+    ready: true,
+  },
+  {
+    id: "soundscapes",
+    icon: Music,
+    title: "Focus Soundscapes",
+    description: "Ambient sounds and binaural beats for deep concentration",
+    tag: "Audio",
+    tagColor: "bg-indigo-100 text-indigo-700",
+    gradient: "from-indigo-200 to-indigo-100",
+    ready: true,
+  },
+  {
+    id: "cognitive",
+    icon: Brain,
+    title: "Cognitive Training",
+    description: "Memory and attention exercises to sharpen mental agility",
+    tag: "Training",
+    tagColor: "bg-[hsl(258_100%_93%)] text-[hsl(258_100%_50%)]",
+    gradient: "from-[hsl(258_100%_93%)] to-[hsl(197_100%_93%)]",
+    ready: true,
+  },
+  {
     id: "focus-mode",
     icon: Focus,
     title: "Deep Focus Mode",
@@ -58,36 +88,6 @@ const TOOLS = [
     gradient: "from-pink-200 to-pink-100",
     ready: false,
   },
-  {
-    id: "breathing",
-    icon: Wind,
-    title: "Breathing Exercise",
-    description: "Guided box breathing and 4-7-8 techniques for calm",
-    tag: "Wellness",
-    tagColor: "bg-teal-100 text-teal-700",
-    gradient: "from-teal-200 to-teal-100",
-    ready: true,
-  },
-  {
-    id: "soundscapes",
-    icon: Music,
-    title: "Focus Soundscapes",
-    description: "Ambient sounds and binaural beats for deep concentration",
-    tag: "Audio",
-    tagColor: "bg-indigo-100 text-indigo-700",
-    gradient: "from-indigo-200 to-indigo-100",
-    ready: true,
-  },
-  {
-    id: "cognitive",
-    icon: Brain,
-    title: "Cognitive Training",
-    description: "Memory and attention exercises to sharpen mental agility",
-    tag: "Training",
-    tagColor: "bg-[hsl(258_100%_93%)] text-[hsl(258_100%_50%)]",
-    gradient: "from-[hsl(258_100%_93%)] to-[hsl(197_100%_93%)]",
-    ready: true,
-  },
 ] as const;
 
 // ── Productivity Page ─────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ export default function Productivity() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto smooth-scroll">
       {/* Header */}
       <div className="px-6 py-5 border-b border-[hsl(258_20%_90%)] bg-gradient-hero">
         <h1 className="text-xl font-heading font-bold text-[hsl(232_45%_16%)]">

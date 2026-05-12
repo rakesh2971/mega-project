@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
-import { Heart, Focus, BookOpen, TrendingUp, Activity, Mic, MicOff, MessageSquare, Loader2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Heart, Focus, BookOpen, TrendingUp, Activity, Mic, MicOff, MessageSquare, Loader2, Plus, VolumeX, Wind, Timer } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getGreeting, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/cn";
@@ -7,6 +8,7 @@ import { FLOAT_CANVAS_H } from "@/constants/avatar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ChatSessionsModal from "@/components/ChatSessionsModal";
 import { invoke } from "@tauri-apps/api/core";
+import { DashboardStats } from "@/pages/Dashboard";
 
 // Lazy-load the heavy Live2D + PIXI bundle so React mounts instantly
 const AvatarCanvas = lazy(() => import("@/components/avatar/AvatarCanvas"));
@@ -54,12 +56,14 @@ interface ChatSession {
 }
 
 export default function Home() {
-  const { avatarMood, setAvatarMood, isListening, setListening, isSpeaking, setSpeaking } = useAppStore();
+  const navigate = useNavigate();
+  const { avatarMood, setAvatarMood, isListening, setListening, isSpeaking, setSpeaking, user } = useAppStore();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   // Session management
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -74,6 +78,14 @@ export default function Home() {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch quick stats
+  useEffect(() => {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
+    invoke<DashboardStats>("get_dashboard_stats", { userId })
+      .then((s) => setStats(s))
+      .catch((e) => console.error("Could not fetch home stats:", e));
+  }, [user]);
 
   // Voice Recognition Setup
   useEffect(() => {
@@ -178,6 +190,14 @@ export default function Home() {
     }
   };
 
+  const stopSpeaking = () => {
+    const synth = window.speechSynthesis;
+    if (synth) {
+      synth.cancel();
+    }
+    setSpeaking(false);
+  };
+
   const handleSend = async (textToSubmit?: string) => {
     const text = textToSubmit || inputValue.trim();
     if (!text || isLoading) return;
@@ -241,11 +261,17 @@ export default function Home() {
     }
   };
 
+  const formatFocusTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
   const quickStats = [
-    { icon: Heart, label: "Mood Score", value: "—", color: "bg-pink-400" },
-    { icon: Focus, label: "Focus Streak", value: "—", color: "bg-[hsl(258_100%_65%)]" },
-    { icon: TrendingUp, label: "Tasks Done", value: "—", color: "bg-[hsl(181_84%_45%)]" },
-    { icon: Activity, label: "Wellness", value: "—", color: "bg-blue-400" },
+    { icon: Heart, label: "Mood Score", value: stats?.latest_mood_level ? `${stats.latest_mood_level}/5` : "—", color: "bg-pink-400" },
+    { icon: Focus, label: "Focus Streak", value: stats ? `${stats.streak_days} days` : "—", color: "bg-[hsl(258_100%_65%)]" },
+    { icon: TrendingUp, label: "Tasks Done", value: stats ? `${stats.tasks_today}` : "—", color: "bg-[hsl(181_84%_45%)]" },
+    { icon: Timer, label: "Focus Time", value: stats ? formatFocusTime(stats.focus_minutes_today) : "—", color: "bg-blue-400" },
   ];
 
   return (
@@ -259,7 +285,7 @@ export default function Home() {
           </p>
           <h1 className="text-xl font-heading font-bold text-[hsl(232_45%_16%)] mt-1">
             {getGreeting()},{" "}
-            <span className="gradient-text">User</span>
+            <span className="gradient-text">{user?.name ?? "Friend"}</span>
           </h1>
         </div>
 
@@ -277,19 +303,23 @@ export default function Home() {
           </Suspense>
         </ErrorBoundary>
 
-        {/* Voice toggle */}
+        {/* Voice / Speaking toggle — single smart button */}
         <button
           id="btn-voice-toggle"
-          onClick={() => setListening(!isListening)}
+          onClick={isSpeaking ? stopSpeaking : () => setListening(!isListening)}
           className={cn(
             "flex items-center gap-2 px-5 py-2.5 rounded-full",
             "font-heading font-semibold text-sm transition-all",
-            isListening
+            isSpeaking
+              ? "bg-red-500 hover:bg-red-600 text-white shadow-md animate-pulse"
+              : isListening
               ? "bg-gradient-primary text-[hsl(232_45%_16%)] shadow-(--shadow-glow) animate-pulse"
               : "glass-card text-muted-foreground hover:text-[hsl(232_45%_16%)] hover-glow"
           )}
         >
-          {isListening ? (
+          {isSpeaking ? (
+            <><VolumeX size={16} /> Stop Talking</>
+          ) : isListening ? (
             <><MicOff size={16} /> Stop Listening</>
           ) : (
             <><Mic size={16} /> Talk to NeuroMate</>
@@ -435,12 +465,13 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: Heart, label: "Mood Check", color: "from-pink-200 to-pink-100" },
-              { icon: Focus, label: "Focus Session", color: "from-purple-200 to-purple-100" },
-              { icon: BookOpen, label: "Daily Journal", color: "from-blue-200 to-blue-100" },
-            ].map(({ icon: Icon, label, color }) => (
+              { icon: Wind, label: "Breathing", color: "from-pink-200 to-pink-100", path: "/productivity/breathing" },
+              { icon: Focus, label: "Pomodoro", color: "from-purple-200 to-purple-100", path: "/productivity/pomodoro" },
+              { icon: BookOpen, label: "Daily Journal", color: "from-blue-200 to-blue-100", path: "/dashboard" },
+            ].map(({ icon: Icon, label, color, path }) => (
               <button
                 key={label}
+                onClick={() => navigate(path)}
                 className={cn(
                   "glass-card rounded-2xl p-4 flex flex-col items-center gap-2",
                   "hover-glow cursor-pointer transition-all group"

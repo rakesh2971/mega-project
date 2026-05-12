@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import AddActivityDialog from "@/components/AddActivityDialog";
+import { useAppStore } from "@/store/useAppStore";
 
 // ── Color tokens (matches index.css palette) ──────────────────────────────
 const PURPLE     = "hsl(258 100% 65%)";
@@ -308,9 +309,7 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
 
 // ── Dashboard Page ────────────────────────────────────────────────────────
 
-const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
-
-interface DashboardStats {
+export interface DashboardStats {
   tasks_today: number;
   tasks_total_today: number;
   latest_mood_level: number | null;
@@ -333,6 +332,8 @@ interface HeatmapDay {
 }
 
 export default function Dashboard() {
+  const { user } = useAppStore();
+  const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
   const [activeRange, setActiveRange] = useState("7D");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [liveActivities, setLiveActivities] = useState<ActivityItem[]>([]);
@@ -350,13 +351,13 @@ export default function Dashboard() {
     try {
       const rangeDays = activeRange === "90D" ? 90 : activeRange === "30D" ? 30 : 7;
       const [s, acts, heat, prod, mood, work, metrics] = await Promise.all([
-        invoke<DashboardStats>("get_dashboard_stats", { userId: DUMMY_USER_ID }),
-        invoke<ActivityItem[]>("get_recent_activities", { userId: DUMMY_USER_ID, limit: 10 }),
-        invoke<HeatmapDay[]>("get_heatmap", { userId: DUMMY_USER_ID, year: new Date().getFullYear() }),
-        invoke<ProductivityDay[]>("get_productivity_analytics", { userId: DUMMY_USER_ID, rangeDays }),
-        invoke<MoodDay[]>("get_mood_analytics", { userId: DUMMY_USER_ID, rangeDays }),
-        invoke<WorkCategory[]>("get_work_distribution", { userId: DUMMY_USER_ID }),
-        invoke<HabitMetrics>("get_habit_metrics", { userId: DUMMY_USER_ID }),
+        invoke<DashboardStats>("get_dashboard_stats", { userId }),
+        invoke<ActivityItem[]>("get_recent_activities", { userId, limit: 10 }),
+        invoke<HeatmapDay[]>("get_heatmap", { userId, year: new Date().getFullYear() }),
+        invoke<ProductivityDay[]>("get_productivity_analytics", { userId, rangeDays }),
+        invoke<MoodDay[]>("get_mood_analytics", { userId, rangeDays }),
+        invoke<WorkCategory[]>("get_work_distribution", { userId }),
+        invoke<HabitMetrics>("get_habit_metrics", { userId }),
       ]);
       setStats(s);
       setLiveActivities(acts);

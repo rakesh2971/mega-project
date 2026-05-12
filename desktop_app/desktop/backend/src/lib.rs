@@ -45,6 +45,9 @@ pub fn run() {
             // auth
             commands::auth::get_current_user,
             commands::auth::login_user,
+            commands::auth::register_user,
+            commands::auth::logout_user,
+            commands::auth::update_profile,
             commands::auth::get_user_by_id,
             // community
             commands::community::get_community_feed,

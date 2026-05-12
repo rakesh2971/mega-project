@@ -12,6 +12,7 @@ import Pomodoro from "@/pages/Pomodoro";
 import Breathing from "@/pages/Breathing";
 import Soundscapes from "@/pages/Soundscapes";
 import Cognitive from "@/pages/Cognitive";
+import Profile from "@/pages/Profile";
 
 // ── App ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/productivity/breathing" element={<Breathing />} />
           <Route path="/productivity/soundscapes" element={<Soundscapes />} />
           <Route path="/productivity/cognitive" element={<Cognitive />} />
+          <Route path="/profile"      element={<Profile />} />
 
 
         </Routes>

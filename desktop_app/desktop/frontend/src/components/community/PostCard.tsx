@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Heart, MessageCircle, Repeat2, Star, Flag, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/store/useAppStore";
 
 export interface Post {
   id: string;
@@ -28,6 +29,8 @@ export interface PostComment {
 }
 
 export default function PostCard({ post, onInteraction }: { post: Post, onInteraction?: () => void }) {
+  const { user } = useAppStore();
+  const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [helpful, setHelpful] = useState(post.is_helpful);
@@ -61,7 +64,7 @@ export default function PostCard({ post, onInteraction }: { post: Post, onIntera
     
     try {
       const isNowHelpful: boolean = await invoke("toggle_helpful_post", {
-        userId: DUMMY_USER_ID,
+        userId,
         postId: post.id
       });
       setHelpful(isNowHelpful);
@@ -82,7 +85,7 @@ export default function PostCard({ post, onInteraction }: { post: Post, onIntera
     try {
       await invoke("repost", {
         postId: post.id,
-        authorId: DUMMY_USER_ID,
+        authorId: userId,
         thought: repostThought.trim() !== "" ? repostThought : null
       });
       setShowRepostModal(false);
@@ -138,7 +141,7 @@ export default function PostCard({ post, onInteraction }: { post: Post, onIntera
     try {
       await invoke("add_post_comment", {
         postId: post.id,
-        authorId: DUMMY_USER_ID,
+        authorId: userId,
         content: commentInput
       });
       setCommentInput("");

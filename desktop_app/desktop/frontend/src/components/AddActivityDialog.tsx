@@ -2,9 +2,11 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Plus, X, CheckCircle2, Heart, Focus, BookOpen, RotateCcw, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useAppStore } from "@/store/useAppStore";
 
-// ── Dummy user for now (same as community) ────────────────────────────────
-const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000001";
+// ── Fallback user ID (when not logged in) ────────────────────────────────
+const FALLBACK_USER_ID = "00000000-0000-0000-0000-000000000001";
+
 
 // ── Types ─────────────────────────────────────────────────────────────────
 type Tab = "task" | "mood" | "focus" | "journal" | "routine" | "meditation";
@@ -23,7 +25,7 @@ const inputCls = "w-full text-xs px-4 py-3 rounded-2xl bg-white/60 border border
 const labelCls = "block text-[11px] font-bold tracking-wide text-[hsl(232_45%_16%)] uppercase mb-1.5 ml-1 opacity-80";
 
 // ── Task Form ─────────────────────────────────────────────────────────────
-function TaskForm({ onSuccess }: { onSuccess: () => void }) {
+function TaskForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [completed, setCompleted] = useState(false);
@@ -37,7 +39,7 @@ function TaskForm({ onSuccess }: { onSuccess: () => void }) {
         title: title.trim(),
         description: desc.trim() || null,
         completed,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setTitle(""); setDesc(""); setCompleted(false);
       onSuccess();
@@ -78,7 +80,7 @@ const MOOD_OPTIONS = [
   { level: 5, label: "Amazing",    emoji: "😄", type: "very_happy", color: "hover:bg-pink-100 hover:border-pink-300 peer-checked:bg-pink-100 peer-checked:border-pink-400 peer-checked:text-pink-700" },
 ];
 
-function MoodForm({ onSuccess }: { onSuccess: () => void }) {
+function MoodForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [level, setLevel] = useState(3);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -91,7 +93,7 @@ function MoodForm({ onSuccess }: { onSuccess: () => void }) {
         moodLevel: level,
         moodType: mood?.type || "neutral",
         notes: notes.trim() || null,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setNotes("");
       onSuccess();
@@ -125,7 +127,7 @@ function MoodForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ── Focus Form ────────────────────────────────────────────────────────────
-function FocusForm({ onSuccess }: { onSuccess: () => void }) {
+function FocusForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [activity, setActivity] = useState("");
   const [duration, setDuration] = useState(25);
   const [notes, setNotes] = useState("");
@@ -139,7 +141,7 @@ function FocusForm({ onSuccess }: { onSuccess: () => void }) {
         activity: activity.trim(),
         durationMinutes: duration,
         notes: notes.trim() || null,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setActivity(""); setDuration(25); setNotes("");
       onSuccess();
@@ -167,7 +169,7 @@ function FocusForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ── Journal Form ──────────────────────────────────────────────────────────
-function JournalForm({ onSuccess }: { onSuccess: () => void }) {
+function JournalForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mood, setMood] = useState("");
@@ -181,7 +183,7 @@ function JournalForm({ onSuccess }: { onSuccess: () => void }) {
         title: title.trim(),
         content: content.trim(),
         mood: mood.trim() || null,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setTitle(""); setContent(""); setMood("");
       onSuccess();
@@ -209,7 +211,7 @@ function JournalForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ── Routine Form ──────────────────────────────────────────────────────────
-function RoutineForm({ onSuccess }: { onSuccess: () => void }) {
+function RoutineForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [completed, setCompleted] = useState(false);
@@ -223,7 +225,7 @@ function RoutineForm({ onSuccess }: { onSuccess: () => void }) {
         name: name.trim(),
         description: desc.trim() || null,
         completed,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setName(""); setDesc(""); setCompleted(false);
       onSuccess();
@@ -258,7 +260,7 @@ function RoutineForm({ onSuccess }: { onSuccess: () => void }) {
 // ── Meditation Form ───────────────────────────────────────────────────────
 const MEDITATION_TYPES = ["Mindfulness", "Guided", "Breathing", "Body Scan", "Loving-Kindness", "Visualization", "Transcendental", "Movement", "Other"];
 
-function MeditationForm({ onSuccess }: { onSuccess: () => void }) {
+function MeditationForm({ onSuccess, userId }: { onSuccess: () => void; userId: string }) {
   const [type, setType] = useState("");
   const [duration, setDuration] = useState(10);
   const [notes, setNotes] = useState("");
@@ -272,7 +274,7 @@ function MeditationForm({ onSuccess }: { onSuccess: () => void }) {
         meditationType: type,
         durationMinutes: duration,
         notes: notes.trim() || null,
-        userId: DUMMY_USER_ID,
+        userId,
       });
       setType(""); setDuration(10); setNotes("");
       onSuccess();
@@ -329,6 +331,8 @@ interface AddActivityDialogProps {
 }
 
 export default function AddActivityDialog({ onSuccess }: AddActivityDialogProps) {
+  const { user } = useAppStore();
+  const userId = user?.id ?? FALLBACK_USER_ID;
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("task");
 
@@ -399,12 +403,12 @@ export default function AddActivityDialog({ onSuccess }: AddActivityDialogProps)
             {/* Form body */}
             <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
               <div className="animate-in slide-in-from-right-4 fade-in duration-300">
-                {activeTab === "task"       && <TaskForm       onSuccess={handleSuccess} />}
-                {activeTab === "mood"       && <MoodForm       onSuccess={handleSuccess} />}
-                {activeTab === "focus"      && <FocusForm      onSuccess={handleSuccess} />}
-                {activeTab === "journal"    && <JournalForm    onSuccess={handleSuccess} />}
-                {activeTab === "routine"    && <RoutineForm    onSuccess={handleSuccess} />}
-                {activeTab === "meditation" && <MeditationForm onSuccess={handleSuccess} />}
+                {activeTab === "task"       && <TaskForm       onSuccess={handleSuccess} userId={userId} />}
+                {activeTab === "mood"       && <MoodForm       onSuccess={handleSuccess} userId={userId} />}
+                {activeTab === "focus"      && <FocusForm      onSuccess={handleSuccess} userId={userId} />}
+                {activeTab === "journal"    && <JournalForm    onSuccess={handleSuccess} userId={userId} />}
+                {activeTab === "routine"    && <RoutineForm    onSuccess={handleSuccess} userId={userId} />}
+                {activeTab === "meditation" && <MeditationForm onSuccess={handleSuccess} userId={userId} />}
               </div>
             </div>
           </div>

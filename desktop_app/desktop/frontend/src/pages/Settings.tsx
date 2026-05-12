@@ -10,7 +10,6 @@ import { cn } from "@/lib/cn";
 const SETTING_TABS = [
   { id: "general",       label: "General",       icon: SettingsIcon },
   { id: "appearance",    label: "Appearance",    icon: Palette },
-  { id: "profile",       label: "Profile",       icon: User },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy",       label: "Privacy",       icon: Shield },
   { id: "ai",            label: "AI & Voice",    icon: Brain },
@@ -99,24 +98,6 @@ function TabContent({ tab }: { tab: TabId }) {
           <div className="flex items-center gap-1 text-xs font-medium text-[hsl(258_100%_60%)] cursor-pointer">
             Medium <ChevronRight size={12} />
           </div>
-        } />
-      </div>
-    ),
-    profile: (
-      <div>
-        <SettingRow label="Display name" description="How NeuroMate addresses you" control={
-          <div className="skeleton h-7 w-32 rounded-lg" />
-        } />
-        <SettingRow label="Avatar" description="Customize your profile picture" control={
-          <div className="h-9 w-9 rounded-full bg-gradient-primary" />
-        } />
-        <SettingRow label="Status" description="Your current focus status" control={
-          <div className="flex items-center gap-1 text-xs font-medium text-[hsl(258_100%_60%)] cursor-pointer">
-            Online <ChevronRight size={12} />
-          </div>
-        } />
-        <SettingRow label="Bio" description="Short description for community profile" control={
-          <div className="skeleton h-7 w-40 rounded-lg" />
         } />
       </div>
     ),

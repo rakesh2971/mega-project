@@ -22,8 +22,11 @@ const LEVEL_STYLES: Record<string, string> = {
 };
 
 import { invoke } from "@tauri-apps/api/core";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function ChallengeCard({ challenge: initial }: { challenge: Challenge }) {
+  const { user } = useAppStore();
+  const userId = user?.id ?? "00000000-0000-0000-0000-000000000001";
   const [isJoined, setIsJoined] = useState(initial.isJoined);
   const [progress] = useState(initial.progress ?? 0);
   const [loading, setLoading] = useState(false);
@@ -35,7 +38,7 @@ export default function ChallengeCard({ challenge: initial }: { challenge: Chall
     if (isJoined) return; // Do nothing if already joined, or handle leave/continue
     setLoading(true);
     try {
-      await invoke("join_challenge", { userId: DUMMY_USER_ID, challengeId: initial.id });
+      await invoke("join_challenge", { userId, challengeId: initial.id });
       setIsJoined(true);
       window.dispatchEvent(new CustomEvent("challengeJoined"));
     } catch (e) {
